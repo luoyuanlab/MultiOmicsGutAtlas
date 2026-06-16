@@ -1,0 +1,172 @@
+---
+title: "GSEA: SELENOP+ vs SELENOP- CD68+ Macrophages (UC)"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r libraries}
+library(DOSE)
+library(tidyverse)
+library(org.Hs.eg.db)
+library(AnnotationDbi)
+library(clusterProfiler)
+library(ReactomePA)
+library(ggplot2)
+```
+
+Preranked GSEA across GO, KEGG, WikiPathways, and Reactome databases comparing
+CD68+SELENOP+ vs CD68+SELENOP- macrophages from the UC atlas (Fig. 1F).
+DEGs computed in 02_myeloid_subclustering.R.
+
+```{r load-degs}
+# Input: DEGs from FindMarkers(SELENOP_exp Pos vs Neg) in CD68+ myeloid cells
+degs <- read.csv("/path/to/uc/scrna/output/myeloid/cd68_selenop_pos_neg_degs.csv")
+
+degs <- degs %>%
+  filter(avg_log2FC > 0.5 | avg_log2FC < -0.5) %>%
+  select(X, avg_log2FC) %>%
+  rename(gene = X)
+```
+
+```{r entrez-mapping}
+entrez_ids <- mapIds(org.Hs.eg.db,
+                     keys    = degs$gene,
+                     column  = "ENTREZID",
+                     keytype = "SYMBOL",
+                     multiVals = "first")
+
+degs$entrez <- as.vector(entrez_ids)
+degs <- degs %>% filter(!is.na(entrez)) %>% arrange(-avg_log2FC)
+entrez_degs <- setNames(degs$avg_log2FC, degs$entrez)
+```
+
+```{r gsea-go}
+ego <- gseGO(geneList     = entrez_degs,
+             OrgDb        = org.Hs.eg.db,
+             ont          = "ALL",
+             pvalueCutoff = 0.05,
+             verbose      = FALSE)
+```
+
+```{r gsea-kegg}
+mkk <- gseKEGG(geneList     = entrez_degs,
+               organism     = "hsa",
+               pvalueCutoff = 0.5,
+               verbose      = FALSE)
+```
+
+```{r gsea-wikipathways}
+wp <- gseWP(entrez_degs, organism = "Homo sapiens", pvalueCutoff = 0.5, verbose = FALSE)
+```
+
+```{r gsea-reactome}
+react <- gsePathway(entrez_degs, pvalueCutoff = 0.5, verbose = FALSE)
+```
+
+```{r combine-results}
+# Combine all databases and label source
+react_sub <- react@result %>% select(Description, setSize, enrichmentScore, NES,
+                                     pvalue, p.adjust, qvalue, core_enrichment) %>%
+  mutate(Database = "Reactome")
+ego_sub   <- ego@result   %>% select(Description, setSize, enrichmentScore, NES,
+                                     pvalue, p.adjust, qvalue, core_enrichment) %>%
+  mutate(Database = "GO")
+kk_sub    <- mkk@result   %>% select(Description, setSize, enrichmentScore, NES,
+                                     pvalue, p.adjust, qvalue, core_enrichment) %>%
+  mutate(Database = "KEGG")
+wp_sub    <- wp@result    %>% select(Description, setSize, enrichmentScore, NES,
+                                     pvalue, p.adjust, qvalue, core_enrichment) %>%
+  mutate(Database = "WikiPathways")
+
+all_gsea <- bind_rows(react_sub, ego_sub, kk_sub, wp_sub) %>% arrange(enrichmentScore)
+write.csv(all_gsea, "/path/to/uc/scrna/output/gsea/cd68_selenop_gsea_all.csv")
+```
+
+```{r supp4-leading-edge-genes}
+# Supplementary Table 4: GSEA results with leading edge gene symbols
+# core_enrichment from clusterProfiler contains Entrez IDs; convert to symbols here
+entrez_to_symbol <- function(entrez_string) {
+  if (is.na(entrez_string) || entrez_string == "") return("")
+  ids  <- strsplit(entrez_string, "/")[[1]]
+  syms <- mapIds(org.Hs.eg.db, keys = ids, column = "SYMBOL",
+                 keytype = "ENTREZID", multiVals = "first")
+  paste(na.omit(syms), collapse = "/")
+}
+
+all_gsea_supp <- all_gsea %>%
+  rowwise() %>%
+  mutate(leading_edge_genes = entrez_to_symbol(core_enrichment)) %>%
+  ungroup() %>%
+  select(Database, Description, setSize, enrichmentScore, NES,
+         pvalue, p.adjust, qvalue, leading_edge_genes) %>%
+  arrange(NES)
+
+write.csv(all_gsea_supp, "/path/to/uc/scrna/output/gsea/cd68_selenop_gsea_supp4.csv",
+          row.names = FALSE)
+```
+
+```{r filter-paper-pathways}
+# Pathways selected for Fig. 1F
+filter_gsea <- c(
+  "Oxidative phosphorylation", "Selenium metabolism and selenoproteins",
+  "Embryonic stem cell pluripotency pathways", "Iron uptake and transport",
+  "Cholesterol metabolism", "response to cytokine", "Selenocysteine synthesis",
+  "Interferon Signaling", "interleukin-12 production",
+  "Signal transduction through IL1R", "canonical NF-kappaB signal transduction",
+  "Interleukin-10 signaling", "Toll Like Receptor 2 (TLR2) Cascade",
+  "MAPK signaling", "TNF signaling pathway"
+)
+
+all_gsea_filter <- all_gsea %>%
+  filter(Description %in% filter_gsea) %>%
+  arrange(NES)
+
+# Standardize display names
+all_gsea_filter <- all_gsea_filter %>%
+  mutate(Description = recode(Description,
+    "response to cytokine"                   = "Response to cytokine",
+    "interleukin-12 production"              = "Interleukin-12 production",
+    "canonical NF-kappaB signal transduction" = "Canonical NF-kappaB signalling",
+    "Toll Like Receptor 2 (TLR2) Cascade"   = "Toll Like Receptor 2 Cascade",
+    "Embryonic stem cell pluripotency pathways" = "Stem cell pluripotency pathways"
+  )) %>%
+  mutate(Pathway = factor(Description, levels = Description[order(NES)]),
+         Color_Group = case_when(
+           NES > 0 & p.adjust < 0.05  ~ "Positive w/ FDR<=0.05",
+           NES > 0 & p.adjust >= 0.05 ~ "Positive w/ FDR>0.05",
+           NES < 0 & p.adjust < 0.05  ~ "Negative w/ FDR<=0.05",
+           NES < 0 & p.adjust >= 0.05 ~ "Negative w/ FDR>0.05"
+         ))
+```
+
+```{r plot-fig1f}
+color_map <- c(
+  "Positive w/ FDR<=0.05" = "darkred",
+  "Positive w/ FDR>0.05"  = "lightcoral",
+  "Negative w/ FDR<=0.05" = "darkblue",
+  "Negative w/ FDR>0.05"  = "lightblue"
+)
+offset <- 0.02 * max(abs(all_gsea_filter$NES))
+
+p <- ggplot(all_gsea_filter, aes(x = NES, y = Pathway, fill = Color_Group)) +
+  geom_col() +
+  scale_fill_manual(values = color_map) +
+  geom_text(data = filter(all_gsea_filter, NES > 0), aes(label = Pathway),
+            x = -offset, hjust = 1, size = 3) +
+  geom_text(data = filter(all_gsea_filter, NES < 0), aes(label = Pathway),
+            x = offset, hjust = 0, size = 3) +
+  theme_classic() +
+  theme(axis.text.y = element_blank(), axis.title.y = element_blank(),
+        axis.ticks.y = element_blank(), axis.line.y = element_blank(),
+        legend.position = "top", panel.grid = element_blank(),
+        plot.margin = margin(0.5, 1, 0.5, 1, "cm")) +
+  labs(title = "GSEA: CD68+SELENOP+ vs CD68+SELENOP- Myeloid",
+       x = "Normalized Enrichment Score (NES)", fill = "")
+
+ggsave("/path/to/uc/scrna/output/gsea/fig1f_gsea_selenop.png",
+       plot = p, width = 7, height = 4.2, dpi = 300)
+p
+```

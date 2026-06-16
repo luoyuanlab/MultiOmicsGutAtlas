@@ -1,0 +1,572 @@
+---
+title: "UC Atlas: Dataset Loading, QC, and Pre-integration Merging"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(Seurat)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+library(DoubletFinder)
+```
+
+# Overview
+
+Loads and prepares all 9 UC datasets (P1–P9) for atlas integration.
+Each dataset originates from a different source format and requires
+format-specific ingestion before applying unified per-dataset QC thresholds.
+
+After QC, datasets are merged into a single Seurat object and exported
+for Harmony integration in `01_atlas_integration.R`.
+
+```{r paths}
+BASE_DIR <- "/path/to/uc/scrna"
+```
+
+---
+
+# 1. P1 – Smillie et al. (colonoscopy biopsies)
+
+Pre-processed Seurat object; label harmonization applied.
+
+```{r p1-load}
+p1 <- readRDS(file.path(BASE_DIR, "p1/Seurat.RDS"))
+p1 <- SetIdent(p1, value = "P1")
+```
+
+---
+
+# 2. P2 – Parikh et al. (CITE-seq, T/B/Myeloid)
+
+```{r p2-load}
+p2 <- readRDS(file.path(BASE_DIR, "p2/Seurat.RDS"))
+
+mapping <- read.csv(file.path(BASE_DIR, "merged/cell_type_mapping.csv"))
+p2_label <- mapping$label[match(p2$label, mapping$label_orig)]
+p2$label_new <- p2_label
+p2 <- subset(p2, subset = label_new != "Discard")
+p2 <- SetIdent(p2, value = "label_new")
+```
+
+---
+
+# 3. P3 – Kong et al. (colon biopsies)
+
+```{r p3-load}
+p3 <- readRDS(file.path(BASE_DIR, "p3/Seurat.RDS"))
+p3 <- SetIdent(p3, value = "P3")
+```
+
+---
+
+# 4. P4 – Human Gut Cell Atlas (Gut Atlas)
+
+Source: separate epithelial (Epi), immune (Imm), and fibroblast (Fib)
+compartment files in Matrix Market format with separate barcodes/genes.
+
+```{r p4-load}
+load_mtx_compartment <- function(matrix_path, barcode_path, gene_path, project_id) {
+  mat  <- Matrix::readMM(matrix_path)
+  bars <- unlist(read.table(barcode_path, sep = "\t", header = FALSE))
+  genes <- unlist(read.table(gene_path,  sep = "\t", header = FALSE))
+  tab  <- as.data.frame(as.matrix(mat))
+  colnames(tab) <- bars
+  rownames(tab) <- genes
+  CreateSeuratObject(counts = tab, project = project_id)
+}
+
+epi_so <- load_mtx_compartment(
+  file.path(BASE_DIR, "gut_atlas/epi/gene_sorted-Epi.matrix.mtx"),
+  file.path(BASE_DIR, "gut_atlas/epi/Epi.barcodes2.tsv"),
+  file.path(BASE_DIR, "gut_atlas/epi/Epi.genes.tsv"), "P4"
+)
+imm_so <- load_mtx_compartment(
+  file.path(BASE_DIR, "gut_atlas/imm/gene_sorted-Imm.matrix.mtx"),
+  file.path(BASE_DIR, "gut_atlas/imm/Imm.barcodes2.tsv"),
+  file.path(BASE_DIR, "gut_atlas/imm/Imm.genes.tsv"), "P4"
+)
+fib_so <- load_mtx_compartment(
+  file.path(BASE_DIR, "gut_atlas/fib/gene_sorted-Fib.matrix.mtx"),
+  file.path(BASE_DIR, "gut_atlas/fib/Fib.barcodes2.tsv"),
+  file.path(BASE_DIR, "gut_atlas/fib/Fib.genes.tsv"), "P4"
+)
+```
+
+```{r p4-meta}
+meta_all <- read.table(file.path(BASE_DIR, "gut_atlas/metadata/all.meta2.txt"),
+                       sep = "\t", header = TRUE)
+meta_all <- meta_all[-1, ]  # drop header duplicate
+
+attach_meta <- function(so, bar_lst) {
+  m <- meta_all %>%
+    filter(NAME %in% bar_lst) %>%
+    select(-c(nGene, nUMI)) %>%
+    dplyr::rename(label = Cluster, sample = Sample) %>%
+    mutate(condition = case_when(
+      Health == "Healthy"      ~ "HC",
+      Health == "Inflamed"     ~ "UCI",
+      Health == "Non-inflamed" ~ "UCU"
+    )) %>%
+    select(NAME, sample, condition, label)
+  for (col in colnames(m)[-1]) {
+    so <- AddMetaData(so, metadata = m[[col]], col.name = col)
+  }
+  so
+}
+
+epi_so <- attach_meta(epi_so, colnames(epi_so))
+imm_so <- attach_meta(imm_so, colnames(imm_so))
+fib_so <- attach_meta(fib_so, colnames(fib_so))
+
+# Merge across compartments (union of genes)
+p4 <- merge(epi_so, list(imm_so, fib_so))
+```
+
+---
+
+# 5. P5 – SNAP-seq dataset
+
+```{r p5-load}
+p5 <- readRDS(file.path(BASE_DIR, "p5/Seurat.RDS"))
+p5 <- SetIdent(p5, value = "P5")
+```
+
+---
+
+# 6. P6 – Colon Immune Cell Atlas
+
+Source: sparse count matrix (.mtx) with separate gene and metadata CSVs.
+
+```{r p6-load}
+himm <- Matrix::readMM(file.path(BASE_DIR, "imm_atlas/Colon_immune_counts.mtx"))
+gene <- read.csv(file.path(BASE_DIR, "imm_atlas/Colon_immune_gene_names.csv"))
+meta <- read.csv(file.path(BASE_DIR, "imm_atlas/Colon_immune_metadata.csv"))
+
+meta <- meta %>%
+  select(index, donor, region, cell_type) %>%
+  dplyr::rename(label = cell_type) %>%
+  mutate(sample    = paste(donor, region, sep = "_"),
+         condition = "HC") %>%
+  select(index, sample, condition, label)
+
+himm_tab <- as.data.frame(t(as.matrix(himm)))
+colnames(himm_tab) <- meta$index
+rownames(himm_tab) <- gene$index
+
+p6 <- CreateSeuratObject(counts = himm_tab, project = "P6")
+for (col in colnames(meta)[-1]) {
+  p6 <- AddMetaData(p6, metadata = meta[[col]], col.name = col)
+}
+```
+
+---
+
+# 7. P7 – Chang et al. (B and T cell atlas)
+
+Source: separate B cell and T cell Seurat objects; Leiden cluster → cell type mapping.
+
+```{r p7-load}
+bcell <- UpdateSeuratObject(readRDS(file.path(BASE_DIR, "imm_chang/Exp_Seurat_Bcell_R2.Rds")))
+tcell <- UpdateSeuratObject(readRDS(file.path(BASE_DIR, "imm_chang/Exp_Seurat_Tcell_R2.Rds")))
+
+meta_tcell <- as.data.frame(tcell@meta.data) %>%
+  mutate(
+    label = case_when(
+      res.1 %in% c(2,3,5,8,10,11,16) ~ "Naive/memory T",
+      res.1 %in% c(7,12,15)          ~ "Gamma delta T",
+      res.1 == 14                    ~ "MAIT",
+      res.1 == 4                     ~ "T follicular helper",
+      res.1 == 6                     ~ "T reg",
+      res.1 %in% c(0,1,9,13)        ~ "CD8 resident memory T"
+    ),
+    condition = case_when(
+      disease_assignment == 1 ~ "HC",
+      disease_assignment == 2 ~ "UCA"
+    )
+  ) %>%
+  dplyr::rename(sample = sample_gp) %>%
+  select(sample, condition, label)
+
+meta_bcell <- as.data.frame(bcell@meta.data) %>%
+  mutate(
+    label = case_when(
+      res.1 %in% c(2,7,8)              ~ "Naive B",
+      res.1 %in% c(1,3,4)              ~ "Memory B",
+      res.1 %in% c(0,5,6,9:16)        ~ "Plasma B"
+    ),
+    condition = case_when(
+      disease_assignment == 1 ~ "HC",
+      disease_assignment == 2 ~ "UCA"
+    )
+  ) %>%
+  dplyr::rename(sample = sample_gp) %>%
+  select(sample, condition, label)
+
+tcell_so <- CreateSeuratObject(counts = as.data.frame(tcell@assays$RNA@counts), project = "P7")
+bcell_so <- CreateSeuratObject(counts = as.data.frame(bcell@assays$RNA@counts), project = "P7")
+
+for (col in colnames(meta_tcell)) tcell_so <- AddMetaData(tcell_so, meta_tcell[[col]], col.name = col)
+for (col in colnames(meta_bcell)) bcell_so <- AddMetaData(bcell_so, meta_bcell[[col]], col.name = col)
+
+p7 <- merge(bcell_so, tcell_so)
+```
+
+---
+
+# 8. P8 – Internal dataset (Dulai lab)
+
+Cluster-to-label mapping applied to integrate with atlas nomenclature.
+
+```{r p8-load}
+internal <- readRDS(file.path(BASE_DIR, "p8/Integrated_naive_nr_r_2023.rds"))
+internal_counts <- as.data.frame(internal@assays$RNA@counts)
+p8 <- CreateSeuratObject(counts = internal_counts, project = "P8")
+
+internal_meta <- internal@meta.data %>%
+  select(identity, seurat_clusters) %>%
+  mutate(
+    condition = "Inflamed",
+    sample    = identity,
+    label = case_when(
+      seurat_clusters == 0  ~ "CD8+ T",
+      seurat_clusters == 1  ~ "Fibroblast",
+      seurat_clusters == 2  ~ "Macrophage",
+      seurat_clusters %in% c(3,7,9,13) ~ "Plasma",
+      seurat_clusters == 4  ~ "Neutrophil",
+      seurat_clusters == 5  ~ "Naive/Memory B",
+      seurat_clusters == 6  ~ "Absorptive epithelial",
+      seurat_clusters == 8  ~ "Secretory epithelial",
+      seurat_clusters == 10 ~ "Endothelial",
+      seurat_clusters %in% c(11,12,16,18,20) ~ "Fibroblast",
+      seurat_clusters == 15 ~ "Secretory epithelial",
+      seurat_clusters == 17 ~ "Mast",
+      seurat_clusters == 19 ~ "Secretory epithelial",
+      seurat_clusters %in% c(14,21,22) ~ "Discard"
+    ),
+    label_category = case_when(
+      seurat_clusters == 0  ~ "T",
+      seurat_clusters %in% c(1,11,12,16,18,20) ~ "Mesenchymal",
+      seurat_clusters %in% c(2,4,17) ~ "Myeloid",
+      seurat_clusters %in% c(3,5,7,9,13,21) ~ "B",
+      seurat_clusters %in% c(6,8,15,19) ~ "Epithelial",
+      seurat_clusters == 10 ~ "Endothelial",
+      seurat_clusters %in% c(14,22) ~ "Discard"
+    )
+  ) %>%
+  select(sample, condition, label, label_category)
+
+for (col in colnames(internal_meta)) {
+  p8 <- AddMetaData(p8, internal_meta[[col]], col.name = col)
+}
+p8 <- subset(p8, subset = label_category != "Discard")
+```
+
+---
+
+# 9. P9 – Internal raw 10X data (Healthy + Inflamed)
+
+```{r p9-load}
+load_10x <- function(data_dir) {
+  CreateSeuratObject(counts = Read10X(data.dir = data_dir))
+}
+
+edit_meta <- function(so, sample_id, condition_val) {
+  so@meta.data[["orig.ident"]]     <- "P9"
+  so@meta.data[["condition"]]      <- condition_val
+  so@meta.data[["sample"]]         <- sample_id
+  so@meta.data[["label"]]          <- "Unassigned"
+  so@meta.data[["label_category"]] <- "Unassigned"
+  so
+}
+
+# Healthy donors
+hc1_so <- edit_meta(load_10x(file.path(BASE_DIR, "p9/hc1/Filtered")), "hc1", "Healthy")
+hc2_so <- edit_meta(load_10x(file.path(BASE_DIR, "p9/hc2/Filtered")), "hc2", "Healthy")
+hc3_so <- edit_meta(load_10x(file.path(BASE_DIR, "p9/hc3/Filtered")), "hc3", "Healthy")
+hc7_so <- edit_meta(load_10x(file.path(BASE_DIR, "p9/hc7/Filtered")), "hc7", "Healthy")
+hc8_so <- edit_meta(load_10x(file.path(BASE_DIR, "p9/hc8/Filtered")), "hc8", "Healthy")
+
+# Inflamed donors
+inf3_so <- edit_meta(load_10x(file.path(BASE_DIR, "p9/inf3/filtered")), "inf3", "Inflamed")
+inf5_so <- edit_meta(load_10x(file.path(BASE_DIR, "p9/inf5/Filtered")), "inf5", "Inflamed")
+inf6_so <- edit_meta(load_10x(file.path(BASE_DIR, "p9/inf6/Filtered")), "inf6", "Inflamed")
+inf9_so <- edit_meta(load_10x(file.path(BASE_DIR, "p9/inf9/Filtered")), "inf9", "Inflamed")
+
+p9 <- Reduce(merge, list(hc1_so, hc2_so, hc3_so, hc7_so, hc8_so,
+                         inf3_so, inf5_so, inf6_so, inf9_so))
+p9 <- SetIdent(p9, value = "orig.ident")
+```
+
+---
+
+# 10. Merge all datasets
+
+```{r merge-all}
+# Merge P1–P7 external datasets with P8–P9 internal
+so_all <- Reduce(merge, list(p1, p2, p3, p4, p5, p6, p7, p8, p9))
+so_all$orig.ident <- as.character(so_all@active.ident)
+```
+
+---
+
+# 11. Per-dataset QC filtering
+
+QC thresholds were set per dataset by inspecting nCount_RNA, nFeature_RNA,
+and mitochondrial fraction distributions. Thresholds reflect dataset-specific
+library preparation and sequencing depth.
+
+```{r calc-pct-mt}
+so_all[["percent_mt"]] <- PercentageFeatureSet(so_all, "^MT-")
+```
+
+```{r qc-violin-before}
+VlnPlot(so_all, features = "nCount_RNA",   pt.size = 0, group.by = "orig.ident")
+VlnPlot(so_all, features = "nFeature_RNA", pt.size = 0, group.by = "orig.ident")
+VlnPlot(so_all, features = "percent_mt",   pt.size = 0, group.by = "orig.ident")
+```
+
+```{r qc-density-before}
+meta <- so_all@meta.data %>%
+  dplyr::rename(paper = orig.ident, nUMI = nCount_RNA, nGene = nFeature_RNA)
+
+meta %>%
+  ggplot(aes(color = paper, x = nUMI, fill = paper)) +
+  geom_density(alpha = 0.2) + scale_x_log10() + theme_classic() +
+  ylab("Cell density") + ggtitle("UMI distribution by dataset")
+
+meta %>%
+  ggplot(aes(color = paper, x = nGene, fill = paper)) +
+  geom_density(alpha = 0.2) + scale_x_log10() + theme_classic() +
+  ggtitle("Gene count distribution by dataset")
+
+meta %>%
+  ggplot(aes(color = paper, x = percent_mt, fill = paper)) +
+  geom_density(alpha = 0.2) + theme_classic() +
+  ggtitle("Mitochondrial fraction by dataset")
+```
+
+```{r per-dataset-subset}
+sub_p1 <- subset(so_all, subset = orig.ident == "P1")
+sub_p2 <- subset(so_all, subset = orig.ident == "P2")
+sub_p3 <- subset(so_all, subset = orig.ident == "P3")
+sub_p4 <- subset(so_all, subset = orig.ident == "P4")
+sub_p5 <- subset(so_all, subset = orig.ident == "P5")
+sub_p6 <- subset(so_all, subset = orig.ident == "P6")
+sub_p7 <- subset(so_all, subset = orig.ident == "P7")
+sub_p8 <- subset(so_all, subset = orig.ident == "P8")
+sub_p9 <- subset(so_all, subset = orig.ident == "P9")
+```
+
+```{r per-dataset-qc-filter}
+# Per-dataset thresholds informed by distribution inspection above
+filtered_p1 <- subset(sub_p1, subset = nCount_RNA >= 500  & nCount_RNA <= 20000 &
+                                        nFeature_RNA >= 500  & nFeature_RNA <= 2500 &
+                                        percent_mt < 20)
+filtered_p2 <- subset(sub_p2, subset = nCount_RNA >= 500  & nCount_RNA <= 10000 &
+                                        nFeature_RNA >= 250  & nFeature_RNA <= 3000 &
+                                        percent_mt < 15)
+filtered_p3 <- subset(sub_p3, subset = nCount_RNA >= 500  & nCount_RNA <= 25000 &
+                                        nFeature_RNA >= 200  & nFeature_RNA <= 4000 &
+                                        percent_mt < 20)
+filtered_p4 <- subset(sub_p4, subset = nCount_RNA >= 500  & nCount_RNA <= 20000 &
+                                        nFeature_RNA >= 250  & nFeature_RNA <= 3000 &
+                                        percent_mt < 20)
+filtered_p5 <- subset(sub_p5, subset = nCount_RNA >= 500  & nCount_RNA <= 10000 &
+                                        nFeature_RNA >= 200  & nFeature_RNA <= 2500 &
+                                        percent_mt < 15)
+filtered_p6 <- subset(sub_p6, subset = nCount_RNA >= 500  & nCount_RNA <= 30000 &
+                                        nFeature_RNA >= 700  & nFeature_RNA <= 3000 &
+                                        percent_mt < 15)
+filtered_p7 <- subset(sub_p7, subset = nCount_RNA >= 500  & nCount_RNA <= 10000 &
+                                        nFeature_RNA >= 400  & nFeature_RNA <= 2500 &
+                                        percent_mt < 10)
+filtered_p8 <- subset(sub_p8, subset = nCount_RNA >= 500  & nCount_RNA <= 40000 &
+                                        nFeature_RNA >= 250  & nFeature_RNA <= 6000 &
+                                        percent_mt < 20)
+filtered_p9 <- subset(sub_p9, subset = nCount_RNA >= 500  & nCount_RNA <= 25000 &
+                                        nFeature_RNA >= 250  & nFeature_RNA <= 3500 &
+                                        percent_mt < 20)
+```
+
+---
+
+# 12. Gene-level filtering and DoubletFinder (P2–P7)
+
+Genes expressed in fewer than 10 cells per dataset are removed before
+doublet detection. DoubletFinder is applied to re-processed external
+datasets (P2–P7) where per-sample isolation was performed.
+
+```{r gene-filter-fn}
+gene_filter <- function(so) {
+  counts   <- GetAssayData(so, slot = "counts")
+  nonzero  <- counts > 0
+  keep     <- Matrix::rowSums(nonzero) >= 10
+  CreateSeuratObject(counts[keep, ], meta.data = so@meta.data)
+}
+
+filtered_p2 <- gene_filter(filtered_p2)
+filtered_p3 <- gene_filter(filtered_p3)
+filtered_p4 <- gene_filter(filtered_p4)
+filtered_p5 <- gene_filter(filtered_p5)
+filtered_p6 <- gene_filter(filtered_p6)
+filtered_p7 <- gene_filter(filtered_p7)
+```
+
+```{r doublet-finder-prep}
+prep_doublet_finder <- function(so) {
+  so <- NormalizeData(so)
+  so <- FindVariableFeatures(so, verbose = FALSE)
+  so <- ScaleData(so, vars.to.regress = c("nFeature_RNA", "percent_mt"), verbose = FALSE)
+  so <- RunPCA(so, npcs = 20, verbose = FALSE)
+  so <- RunUMAP(so, dims = 1:10, verbose = FALSE)
+  so
+}
+
+filtered_p2 <- prep_doublet_finder(filtered_p2)
+filtered_p3 <- prep_doublet_finder(filtered_p3)
+filtered_p4 <- prep_doublet_finder(filtered_p4)
+filtered_p5 <- prep_doublet_finder(filtered_p5)
+filtered_p6 <- prep_doublet_finder(filtered_p6)
+filtered_p7 <- prep_doublet_finder(filtered_p7)
+```
+
+```{r doublet-finder-pk}
+find_pk <- function(so) {
+  sweep.res <- paramSweep_v3(so, sct = FALSE, PCs = 1:10)
+  sweep.stats <- summarizeSweep(sweep.res, GT = FALSE)
+  bcmvn <- find.pK(sweep.stats)
+  pK <- as.numeric(as.character(bcmvn$pK))
+  pK[which(bcmvn$BCmetric == max(bcmvn$BCmetric))]
+}
+
+pk_p2 <- find_pk(filtered_p2)
+pk_p3 <- find_pk(filtered_p3)
+pk_p4 <- find_pk(filtered_p4)
+pk_p5 <- find_pk(filtered_p5)
+pk_p6 <- find_pk(filtered_p6)
+pk_p7 <- find_pk(filtered_p7)
+```
+
+```{r doublet-finder-run}
+# Expected doublet rates based on 10X Genomics loading density estimates
+run_doublet_finder <- function(so, pct_exp, pk) {
+  nExp <- round(ncol(so) * pct_exp)
+  doubletFinder_v3(so, pN = 0.25, pK = pk, nExp = nExp, PCs = 1:10)
+}
+
+filtered_p2 <- run_doublet_finder(filtered_p2, 0.035, pk_p2)
+filtered_p3 <- run_doublet_finder(filtered_p3, 0.035, pk_p3)
+filtered_p4 <- run_doublet_finder(filtered_p4, 0.028, pk_p4)
+filtered_p5 <- run_doublet_finder(filtered_p5, 0.031, pk_p5)
+filtered_p6 <- run_doublet_finder(filtered_p6, 0.016, pk_p6)
+filtered_p7 <- run_doublet_finder(filtered_p7, 0.080, pk_p7)
+```
+
+---
+
+# 13. Merge filtered datasets and harmonize sample names
+
+```{r final-merge}
+filtered <- Reduce(merge, list(
+  filtered_p1, filtered_p2, filtered_p3, filtered_p4,
+  filtered_p5, filtered_p6, filtered_p7, filtered_p8, filtered_p9
+))
+
+# Gene-level filter on merged object: keep genes in ≥ 50 cells
+counts   <- GetAssayData(filtered, slot = "counts")
+keep     <- Matrix::rowSums(counts > 0) >= 50
+filtered <- subset(filtered, features = rownames(counts)[keep])
+```
+
+```{r sample-name-harmonize}
+# Standardize sample identifiers to dataset_#_sampleID format
+filtered_meta <- filtered@meta.data %>%
+  mutate(sample = case_when(
+    # P8 internal patients (anonymized)
+    sample == "patient_alpha" ~ "P8_#_patient_alpha",
+    sample == "patient_beta"  ~ "P8_#_patient_beta",
+    sample == "patient_gamma" ~ "P8_#_patient_gamma",
+    sample == "patient_delta" ~ "P8_#_patient_delta",
+    sample == "patient_w"     ~ "P8_#_patient_w",
+    sample == "patient_x"     ~ "P8_#_patient_x",
+    sample == "patient_y"     ~ "P8_#_patient_y",
+    sample == "patient_z"     ~ "P8_#_patient_z",
+    sample == "patient_A"     ~ "P8_#_patient_A",
+    sample == "patient_B"     ~ "P8_#_patient_B",
+    sample == "patient_C"     ~ "P8_#_patient_C",
+    sample == "patient_D"     ~ "P8_#_patient_D",
+    # P9 samples
+    sample == "hc1"  ~ "P9_#_hc1",
+    sample == "hc2"  ~ "P9_#_hc2",
+    sample == "hc3"  ~ "P9_#_hc3",
+    sample == "hc7"  ~ "P9_#_hc7",
+    sample == "hc8"  ~ "P9_#_hc8",
+    sample == "inf3" ~ "P9_#_inf3",
+    sample == "inf5" ~ "P9_#_inf5",
+    sample == "inf6" ~ "P9_#_inf6",
+    sample == "inf9" ~ "P9_#_inf9",
+    TRUE ~ sample
+  ))
+filtered@meta.data <- filtered_meta
+```
+
+```{r save-filtered}
+saveRDS(filtered, file.path(BASE_DIR, "merged/Seurat_filtered_9p.RDS"))
+```
+
+---
+
+# 14. Post-filter QC visualization
+
+```{r qc-violin-after}
+VlnPlot(filtered, features = "nCount_RNA",   pt.size = 0, group.by = "orig.ident")
+VlnPlot(filtered, features = "nFeature_RNA", pt.size = 0, group.by = "orig.ident")
+VlnPlot(filtered, features = "percent_mt",   pt.size = 0, group.by = "orig.ident")
+```
+
+---
+
+# 15. Per-dataset UMAP validation (post-integration)
+
+After running `01_atlas_integration.R`, load the integrated object and
+verify that each dataset contributes expected cell types.
+
+```{r per-dataset-umap}
+# Load integrated object (output of 01_atlas_integration.R)
+so_integ <- readRDS(file.path(BASE_DIR, "merged/Seurat_merged_notfiltered_transformed.RDS"))
+so_integ <- subset(so_integ,
+  subset = label %in% c("B_discard", "T_discard", "Epithelial_discard", "Discard"),
+  invert = TRUE
+)
+so_integ <- NormalizeData(so_integ)
+so_integ <- FindVariableFeatures(so_integ)
+so_integ <- ScaleData(so_integ)
+so_integ <- RunPCA(so_integ, verbose = FALSE)
+so_integ <- RunUMAP(so_integ, reduction = "pca", dims = 1:30)
+```
+
+```{r umap-by-dataset}
+# Per-dataset UMAPs: check cell type composition and batch effects
+datasets <- paste0("P", 1:9)
+for (ds in datasets) {
+  sub <- subset(so_integ, subset = orig.ident == ds)
+  print(
+    DimPlot(sub, reduction = "umap", raster = FALSE, label = TRUE, repel = TRUE) +
+      ggtitle(ds) + theme(legend.position = "none")
+  )
+}
+```
+
+```{r umap-overall}
+# Atlas-level UMAP colored by dataset and cell type label
+DimPlot(so_integ, group.by = "orig.ident", raster = FALSE) +
+  ggtitle("All datasets")
+
+DimPlot(so_integ, group.by = "label", raster = FALSE,
+        label = TRUE, repel = TRUE) +
+  theme(legend.position = "none") +
+  ggtitle("Cell type labels")
+```
