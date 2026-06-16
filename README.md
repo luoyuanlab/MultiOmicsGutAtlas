@@ -1,2 +1,2 @@
-# MultiOmicsGutAtlas-
+# MultiOmicsGutAtlas
 MultiOmics Gut Atlas 
