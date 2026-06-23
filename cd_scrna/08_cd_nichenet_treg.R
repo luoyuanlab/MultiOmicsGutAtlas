@@ -290,7 +290,46 @@ rank_mat <- sapply(weight_schemes, function(w) {
   rank(-compute_priority(score_df, w))
 })
 
-cor_mat <- cor(rank_mat, method = "spearman")
+rankings <- lapply(names(weight_schemes), function(nm) {
+  w <- weight_schemes[[nm]]
+  score_df %>%
+    mutate(priority = compute_priority(., w)) %>%
+    arrange(desc(priority)) %>%
+    mutate(rank = row_number()) %>%
+    select(ligand, receptor, rank) %>%
+    mutate(scheme = nm)
+}) %>% bind_rows()
+
+rank_wide <- rankings %>%
+  unite(pair, ligand, receptor, remove = FALSE) %>%
+  pivot_wider(names_from = scheme, values_from = rank)
+
+# ── Top-50 LR pair overlap across parameter settings (Extended Data Fig. 8J) ──
+topN <- 50
+top50_sets <- lapply(names(weight_schemes), function(nm) {
+  rank_wide %>% filter(.data[[nm]] <= topN) %>% pull(pair)
+})
+names(top50_sets) <- names(weight_schemes)
+
+overlap_mat <- outer(names(weight_schemes), names(weight_schemes),
+                     Vectorize(function(a, b) length(intersect(top50_sets[[a]], top50_sets[[b]]))))
+rownames(overlap_mat) <- colnames(overlap_mat) <- names(weight_schemes)
+
+pdf(file.path(OUTPUT_DIR, "plots/nichenet_top50_overlap.pdf"), width = 5, height = 5)
+pheatmap::pheatmap(overlap_mat,
+                   color           = colorRampPalette(c("#f7fbff", "#08306b"))(50),
+                   display_numbers = TRUE, number_format = "%d",
+                   cluster_rows    = FALSE, cluster_cols = FALSE,
+                   fontsize        = 10,
+                   main            = "Overlap of top-50 LR pairs\nacross weight schemes")
+dev.off()
+
+# ── Spearman rank correlation across schemes (Extended Data Fig. 8I) ──
+rank_mat_sp <- rank_wide %>%
+  dplyr::select(all_of(names(weight_schemes))) %>%
+  as.matrix()
+
+cor_mat <- cor(rank_mat_sp, method = "spearman", use = "pairwise.complete.obs")
 
 pdf(file.path(OUTPUT_DIR, "plots/nichenet_weight_sensitivity.pdf"), width = 5, height = 5)
 pheatmap::pheatmap(cor_mat,
