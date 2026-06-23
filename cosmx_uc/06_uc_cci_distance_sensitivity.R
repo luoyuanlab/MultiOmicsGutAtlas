@@ -7,14 +7,14 @@ library(viridis)
 library(CellChat)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-K1_DIR   <- "/share/fsmresfiles/UC/AtoMx/UC_1k_6k_wholetrans/1k/Processed_merged"
+K1_DIR   <- "/path/to/cosmx_data/uc_1k_6k_wtx/1k/Processed_merged"
 OUT_DIR  <- file.path(K1_DIR, "cci_plots")
 RDS_DIR  <- file.path(K1_DIR, "seurat_obj")
 
 # ── Load imputed 1K data ───────────────────────────────────────────────────────
 cosmx_1k <- readRDS(file.path(RDS_DIR, "1k_4pat_norm_dimreduc_noneg.RDS"))
 anno      <- read.csv(file.path(K1_DIR, "anno/auc_cell_type_ywl-b_anno.csv"))
-mapper    <- read.csv("/share/fsmresfiles/UC/scRNA-seq/merged_9p_wip/cell_type_name_mapper.csv")
+mapper    <- read.csv("/path/to/scrna/uc/cell_type_name_mapper.csv")
 
 anno <- left_join(anno, mapper, by = c("label" = "cell_type_short"))
 cosmx_1k$cell_index     <- anno$cells

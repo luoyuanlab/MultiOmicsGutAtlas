@@ -7,8 +7,8 @@ library(dplyr)
 set.seed(123)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-SCRNA_DIR  <- "/share/fsmresfiles/UC/scRNA-seq/merged_cd"
-SAHA_DIR   <- "/share/fsmresfiles/UC/SAHA"
+SCRNA_DIR  <- "/path/to/scrna/cd"
+SAHA_DIR   <- "/path/to/saha"
 CSV_DIR    <- file.path(SAHA_DIR, "csv")
 ANNO_DIR   <- file.path(SAHA_DIR, "anno")
 PLOT_DIR   <- file.path(SAHA_DIR, "plots")

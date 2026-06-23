@@ -5,8 +5,8 @@ library(data.table)
 set.seed(123)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-SCRNA_DIR   <- "/share/fsmresfiles/UC/scRNA-seq/merged_cd"
-RESECT_DIR  <- "/share/fsmresfiles/UC/AtoMx/CD_surgical_resection"
+SCRNA_DIR   <- "/path/to/scrna/cd"
+RESECT_DIR  <- "/path/to/cosmx_data/cd_resection"
 
 load(file.path(SCRNA_DIR, "cell_type_markers_gene_sets.RData"))
 

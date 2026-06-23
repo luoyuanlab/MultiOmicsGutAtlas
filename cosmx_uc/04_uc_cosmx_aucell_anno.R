@@ -7,11 +7,11 @@ set.seed(123)
 # ── Paths ──────────────────────────────────────────────────────────────────────
 # Annotates multiple UC CosMx panels for imputation method comparison (Fig 2)
 # Final annotation used for biology: YWL-B v7 imputed 1K (auc_cell_type_ywl-b_anno.csv)
-SCRNA_DIR  <- "/share/fsmresfiles/UC/scRNA-seq/merged_cd"
-WTX_DIR    <- "/share/fsmresfiles/UC/AtoMx/UC_1k_6k_wholetrans/whole_trans/Processed_merged"
-K1_DIR     <- "/share/fsmresfiles/UC/AtoMx/UC_1k_6k_wholetrans/1k/Processed_merged"
-K6_DIR     <- "/share/fsmresfiles/UC/AtoMx/UC_1k_6k_wholetrans/6k/Processed_merged_upd"
-IMP_DIR    <- "/share/fsmresfiles/UC/scOmics_model/results/Jenny_cosmx_geneimputation/results/1K_imputation"
+SCRNA_DIR  <- "/path/to/scrna/cd"
+WTX_DIR    <- "/path/to/cosmx_data/uc_1k_6k_wtx/whole_trans/Processed_merged"
+K1_DIR     <- "/path/to/cosmx_data/uc_1k_6k_wtx/1k/Processed_merged"
+K6_DIR     <- "/path/to/cosmx_data/uc_1k_6k_wtx/6k/Processed_merged_upd"
+IMP_DIR    <- "/path/to/imputation_model/results/Jenny_cosmx_geneimputation/results/1K_imputation"
 BENCH_DIR  <- file.path(WTX_DIR, "v7")
 
 load(file.path(SCRNA_DIR, "cell_type_markers_gene_sets.RData"))

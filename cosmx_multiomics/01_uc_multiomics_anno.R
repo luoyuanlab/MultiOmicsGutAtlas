@@ -5,8 +5,8 @@ library(data.table)
 set.seed(123)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-SCRNA_DIR  <- "/share/fsmresfiles/UC/scRNA-seq/merged_cd"
-COSMX_DIR  <- "/share/fsmresfiles/UC/scOmics_model/data/Spatial_Protein_CosMx"
+SCRNA_DIR  <- "/path/to/scrna/cd"
+COSMX_DIR  <- "/path/to/imputation_model/data/Spatial_Protein_CosMx"
 
 # Shared gene set collection (50 cell types)
 load(file.path(SCRNA_DIR, "cell_type_markers_gene_sets.RData"))

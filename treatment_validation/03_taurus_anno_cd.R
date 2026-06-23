@@ -8,8 +8,8 @@ library(dplyr)
 set.seed(123)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-SCRNA_DIR  <- "/share/fsmresfiles/UC/scRNA-seq/merged_cd"
-TAURUS_DIR <- "/share/fsmresfiles/UC/NatureImmunology_TAURUS_forJenny"
+SCRNA_DIR  <- "/path/to/scrna/cd"
+TAURUS_DIR <- "/path/to/taurus"
 ANNO_DIR   <- file.path(TAURUS_DIR, "anno")
 PLOT_DIR   <- file.path(TAURUS_DIR, "plots")
 

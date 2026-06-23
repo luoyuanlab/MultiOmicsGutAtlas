@@ -7,17 +7,17 @@ library(ggplot2)
 cohort <- "resection"   # CD surgical resection
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-SCRNA_DIR <- "/share/fsmresfiles/UC/scRNA-seq/merged_cd"
+SCRNA_DIR <- "/path/to/scrna/cd"
 
 if (cohort == "biopsy") {
-  COSMX_DIR  <- "/share/fsmresfiles/UC/AtoMx/CD_6k_wholetrans/whole_trans/Processed_merged"
+  COSMX_DIR  <- "/path/to/cosmx_data/cd_6k_wtx/whole_trans/Processed_merged"
   cosmx_csv  <- file.path(COSMX_DIR, "count_csv/all_treg_raw_counts.csv")
   out_rds    <- file.path(COSMX_DIR, "rds/treg_cosmx_with_labels.rds")
   out_csv    <- file.path(COSMX_DIR, "anno/alltreg_pt_transfer_labels.csv")
   plot_dir   <- file.path(COSMX_DIR, "plots")
   tag        <- "alltregs"
 } else if (cohort == "resection") {
-  COSMX_DIR  <- "/share/fsmresfiles/UC/AtoMx/CD_surgical_resection/combined"
+  COSMX_DIR  <- "/path/to/cosmx_data/cd_resection/combined"
   cosmx_csv  <- file.path(COSMX_DIR, "raw_counts_strict_tregs.csv")
   out_rds    <- file.path(COSMX_DIR, "strict_treg_ptbin_anno.RDS")
   out_csv    <- file.path(COSMX_DIR, "strict_treg_pt_transfer_labels.csv")

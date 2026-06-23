@@ -8,8 +8,8 @@ set.seed(123)
 # All CD 1K biopsy samples available: CD_B1, CD_B3, CD_B4 (primary for figures),
 # CD_B5 (validation), plus non-inflamed/HC controls.
 # Primary sample for figures: CD_B4; Validation: CD_B5
-SCRNA_DIR  <- "/share/fsmresfiles/UC/scRNA-seq/merged_cd"
-COSMX_DIR  <- "/share/fsmresfiles/UC/AtoMx/UC_serial_cuts/1000plex"
+SCRNA_DIR  <- "/path/to/scrna/cd"
+COSMX_DIR  <- "/path/to/cosmx_data/uc_serial_cuts/1000plex"
 
 load(file.path(SCRNA_DIR, "cell_type_markers_gene_sets.RData"))
 

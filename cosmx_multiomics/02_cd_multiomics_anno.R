@@ -5,8 +5,8 @@ library(data.table)
 set.seed(123)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-SCRNA_DIR   <- "/share/fsmresfiles/UC/scRNA-seq/merged_cd"
-COSMX_DIR   <- "/share/fsmresfiles/UC/AtoMx/CD_multiOmics"
+SCRNA_DIR   <- "/path/to/scrna/cd"
+COSMX_DIR   <- "/path/to/cosmx_data/cd_multiomics"
 
 load(file.path(SCRNA_DIR, "cell_type_markers_gene_sets.RData"))
 
