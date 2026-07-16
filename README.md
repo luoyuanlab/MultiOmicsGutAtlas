@@ -148,7 +148,7 @@ Newly generated sequencing and spatial data are deposited in the Gene Expression
 
 - CITE-seq/TCR-seq: [GSE311585](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE311585)
 - CosMx UC and CD 1K cohort: [GSE312415](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE312415)
-- CosMx WTX/6K/resection/multi-omics data: accession pending, will be added upon release
+- CosMx WTX/6K/resection/multi-omics data: accession pending, will be added soon upon release
 
 Public datasets used for atlas integration are cited in the manuscript's Supplementary Tables 1 and 8.
 
@@ -156,17 +156,10 @@ Public datasets used for atlas integration are cited in the manuscript's Supplem
 
 ## Citation
 
-If you use this code or data, please cite:
-
-> [Full citation — add once accepted/assigned a DOI]
+> citation pending upon doi assingment
 
 ---
 
-## License
-
-> [Add a license (e.g., MIT, Apache 2.0) — currently unspecified]
-
----
 
 ## Contact
 
