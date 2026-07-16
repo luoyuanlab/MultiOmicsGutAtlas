@@ -2,6 +2,10 @@
 
 Code accompanying **"An integrated single-cell and spatial atlas identifies OGN⁺RSPO3⁺ fibroblasts as a conserved disease mechanism across ulcerative colitis and Crohn's disease."**
 
+Yanyi Ding, Yawei Li, Cenfu Wei, Shannon Keenan, Yiming Li, Jiwoon Park, Wenjing Yang, Libeth Rosas, Frida Chavez, Isabella Peshek, Stephen B. Hanauer, Emanuelle Bellaguarda, Laura Yun, Christine Boumtri, Vitaliy Poylin, Randy Longman, Alexandra Livanos, Saurabh Mehandru, Ronen Sumagin, Yingzi Cong, Prajan Divakar, Michael Patrick, Liang Zhang, Kimberly Young, Ashley Heck, Mithra Korukonda, Daniel McGuire, Joseph Beechem, Christopher Mason, Mark T. Osterman, Melody Morris, Yuan Luo\*, Parambir S. Dulai\*
+
+![Overview](thumbnail.png)
+
 This repository contains the analysis code used to construct and analyze an integrated single-cell RNA-seq, CITE-seq, and spatial transcriptomic/multi-omic atlas of ulcerative colitis (UC) and Crohn's disease (CD), including a graph neural network (GCN)-based imputation framework for lower-plex spatial transcriptomics panels.
 
 ## Overview
