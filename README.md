@@ -160,7 +160,7 @@ Public datasets used for atlas integration are cited in the manuscript's Supplem
 
 ## Citation
 
-> citation pending upon doi assingment
+> Pending upon doi assingment
 
 ---
 
