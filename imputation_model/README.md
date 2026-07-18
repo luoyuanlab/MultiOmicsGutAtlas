@@ -68,7 +68,7 @@ pip install scanpy anndata scipy numpy pandas scikit-learn tqdm matplotlib seabo
 ### Data
 
 Demo data (UC WTX reference and 6K query datasets) are available on Figshare:
-[https://figshare.com/s/aeeb90650d6f23cd71e](https://figshare.com/s/aeeb90650d6f23cd71e)
+[https://figshare.com/s/aeeb90650d6f23cd71e2](https://figshare.com/s/aeeb90650d6f23cd71e2)
 
 Download the following files and update the paths in `Tutorial.ipynb`:
 - `ref_PATH`: WTX reference dataset (`.h5ad` or `.csv`, cells × genes)
