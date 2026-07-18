@@ -1,6 +1,8 @@
-# CosMxGAE: Graph Autoencoder for Spatial Gene Expression Imputation
+# GCN-Based Gene Expression Imputation for CosMx Spatial Transcriptomics
 
-CosMxGAE imputes the full transcriptome of lower-plex CosMx spatial transcriptomics panels (e.g., 1K or 6K gene panels) using a whole-transcriptome (WTX) reference. It constructs mutual nearest neighbor (MNN) graphs between reference and query cells and trains a two-layer graph convolutional autoencoder to predict held-out gene expression via weighted MSE loss.
+A graph convolutional network (GCN) model that imputes full-transcriptome gene expression in lower-plex CosMx spatial transcriptomics panels using a whole-transcriptome (WTX) reference. The model constructs mutual nearest neighbor (MNN) graphs between reference and query cells and trains a two-layer graph convolutional autoencoder to predict held-out gene expression via weighted MSE loss.
+
+**Primary use case:** imputing the CosMx 1K panel to full transcriptome scale, enabling cell type annotation and downstream spatial analyses that require broader gene coverage. The demo uses a 6K panel query as a faster example (fewer genes to impute).
 
 ---
 
@@ -49,8 +51,8 @@ pip install scanpy anndata scipy numpy pandas scikit-learn tqdm matplotlib seabo
 2. Install dependencies (see above). A conda environment is recommended:
 
 ```bash
-conda create -n cosmxgae python=3.10
-conda activate cosmxgae
+conda create -n gcn_imputation python=3.10
+conda activate gcn_imputation
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 pip install scanpy anndata scipy numpy pandas scikit-learn tqdm matplotlib seaborn jupyter
 ```
@@ -70,7 +72,7 @@ https://figshare.com/articles/dataset/33023585
 
 Download the following files and update the paths in `Tutorial.ipynb`:
 - `ref_PATH`: WTX reference dataset (`.h5ad` or `.csv`, cells × genes)
-- `query_PATH`: CosMx panel query dataset (`.h5ad` or `.csv`, cells × genes)
+- `query_PATH`: CosMx 6K panel query dataset (`.h5ad` or `.csv`, cells × genes)
 
 ### Running the Demo
 
@@ -83,7 +85,7 @@ jupyter notebook Tutorial.ipynb
 The notebook walks through the full pipeline:
 1. Load and preprocess reference (WTX) and query (panel) datasets
 2. Compute MNN-based intra- and inter-dataset adjacency matrices
-3. Train the CosMxGAE model
+3. Train the GCN model
 4. Save imputed gene expression to CSV
 
 ### Expected Output
@@ -129,7 +131,7 @@ dropout = 0.0
 ### Input Format
 
 - **Reference** (`ref_PATH`): whole-transcriptome scRNA-seq or CosMx WTX data, cells × genes, raw or normalized counts. Accepts `.h5ad` or `.csv`.
-- **Query** (`query_PATH`): lower-plex CosMx panel data (e.g., 1K or 6K), cells × genes, same normalization as reference. Accepts `.h5ad` or `.csv`.
+- **Query** (`query_PATH`): lower-plex CosMx panel data (1K or 6K), cells × genes, same normalization as reference. Accepts `.h5ad` or `.csv`.
 - Genes are matched by name; overlapping genes are used for graph construction, unique reference genes are imputed.
 
 ### Tips
@@ -139,6 +141,7 @@ dropout = 0.0
 - The best model weights (lowest validation loss) are saved automatically to `save_PATH/model_best_wts.pt` and can be reloaded:
 
 ```python
+from Imputation_model.GAE import CosMxGAE
 model = CosMxGAE(adj_RNA, input_dim, output_dim, hidden_dim, dropout)
 model.load_state_dict(torch.load(f'{save_PATH}/model_best_wts.pt'))
 model.eval()
