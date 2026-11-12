@@ -35,9 +35,6 @@ annotate_one_file <- function(file, gsc) {
   # Output directory = same folder as the input CSV
   anno_dir <- dirname(file)
 
-  # Save AUCell object
-  save(cells_AUC, file = file.path(anno_dir, "aucell_anno_upd.Rdata"))
-
   # Extract AUC matrix and assign top label per cell
   cells_AUC_mat <- t(getAUC(cells_AUC))  # cells x geneSets
   max_col_indices <- max.col(cells_AUC_mat, ties.method = "first")

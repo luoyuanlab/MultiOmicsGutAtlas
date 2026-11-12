@@ -8,8 +8,6 @@ knitr::opts_chunk$set(echo = TRUE)
 library(dplyr)
 library(Seurat)
 library(ggplot2)
-library(grid)
-library(gridExtra)
 library(DoubletFinder)
 ```
 
@@ -519,17 +517,7 @@ saveRDS(filtered, file.path(BASE_DIR, "merged/Seurat_filtered_9p.RDS"))
 
 ---
 
-# 14. Post-filter QC visualization
-
-```{r qc-violin-after}
-VlnPlot(filtered, features = "nCount_RNA",   pt.size = 0, group.by = "orig.ident")
-VlnPlot(filtered, features = "nFeature_RNA", pt.size = 0, group.by = "orig.ident")
-VlnPlot(filtered, features = "percent_mt",   pt.size = 0, group.by = "orig.ident")
-```
-
----
-
-# 15. Per-dataset UMAP validation (post-integration)
+# 14. Per-dataset UMAP validation (post-integration)
 
 After running `02_atlas_integration.R`, load the integrated object and
 verify that each dataset contributes expected cell types.

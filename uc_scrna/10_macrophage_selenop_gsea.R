@@ -1,29 +1,9 @@
 # UC scRNA-seq atlas: GSEA of CD68+ SELENOP+ vs SELENOP- myeloid cells.
 #
-# The analysis runs on the myeloid object with gene symbols harmonised across the nine studies (for example
-# SEPP1 -> SELENOP), mye_iter3_symfix.RDS. CD68+ cells are split by SELENOP detection, DEGs are called with Seurat
-# FindMarkers, and genes with |log2FC| > 0.5 are ranked for preranked GSEA (GO, KEGG, WikiPathways, Reactome).
-#
-# Panels made
-#   Fig 2F        GSEA, CD68+ SELENOP+ vs SELENOP- myeloid cells (4,245 vs 3,853 cells)
-#   Supp Table 4  all GSEA results
-#
-# Inputs
-#   /share/fsmresfiles/UC/scRNA-seq/merged_9p_wip/subcluster5/mye_iter3_symfix.RDS (myeloid object, gene symbols
-#     harmonised across studies)
-#
-# Outputs
-#   /share/fsmresfiles/UC/revision_jenny/Fig1F_gsea_selenop_symfix/ (DEG CSV, Supp Table 4, plotted values, panel)
-#
-# Run order of sections
-#   F2F_selenop_degs -> F2F_gsea_supp_table4 -> F2F_gsea_barplot
-#
-# How to run
-#   Rscript <this file>                          run every section in the order below
-#   RUN_SECTIONS=<id>[,<id>...] Rscript <file>   run only the listed sections (still in file order)
-#   Each section runs one analysis step and reads its inputs from disk, so a single section can be run once its
-#   upstream outputs exist.
-#   Paths are the lab's absolute paths (to be replaced by placeholders before public release).
+# Panels: Fig 2F (GSEA, CD68+ SELENOP+ vs SELENOP- myeloid cells); Supp Table 4 (all GSEA results).
+# Input: subcluster5/mye_iter3_symfix.RDS (myeloid object, gene symbols harmonised across studies).
+# Outputs: Fig1F_gsea_selenop_symfix/ (DEG CSV, Supp Table 4, plotted values, panel).
+# Run: Rscript <file>, or RUN_SECTIONS=<id>[,<id>...] Rscript <file>.
 .RUN_SECTIONS <- Filter(nzchar, trimws(strsplit(Sys.getenv("RUN_SECTIONS", ""), ",")[[1]]))
 .run <- function(section) {   # all sections run in file order unless RUN_SECTIONS=id1,id2,... is set
   if (length(.RUN_SECTIONS) > 0 && !(section %in% .RUN_SECTIONS)) return(FALSE)
@@ -37,7 +17,7 @@
 # ======================================================================================================================
 if (.run("F2F_selenop_degs")) {
 # CD68+ myeloid cells (CD68 > 0) are split into SELENOP+ (SELENOP > 0) and SELENOP- groups; Seurat FindMarkers with no
-# expression or fold-change pre-filter. Output: cd68_selenop_pos_neg_degs_symfix.csv
+# expression or fold-change pre-filter. Output: cd68_selenop_pos_neg_degs.csv
 suppressMessages({library(Seurat); library(dplyr)})
 OUT <- "/share/fsmresfiles/UC/revision_jenny/Fig1F_gsea_selenop_symfix"
 uc_mye_iter3 <- readRDS("/share/fsmresfiles/UC/scRNA-seq/merged_9p_wip/subcluster5/mye_iter3_symfix.RDS")
@@ -51,7 +31,7 @@ CD68_cells <- SetIdent(CD68_cells, value = "SELENOP_exp")
 deg_selenop <- FindMarkers(CD68_cells, ident.1 = "Pos", ident.2 = "Neg",
                            min.pct = -Inf, logfc.threshold = -Inf,
                            min.cells.feature = 1, min.cells.group = 1)
-write.csv(deg_selenop, file.path(OUT, "cd68_selenop_pos_neg_degs_symfix.csv"))
+write.csv(deg_selenop, file.path(OUT, "cd68_selenop_pos_neg_degs.csv"))
 }  # end section F2F_selenop_degs
 
 
@@ -62,11 +42,11 @@ write.csv(deg_selenop, file.path(OUT, "cd68_selenop_pos_neg_degs_symfix.csv"))
 if (.run("F2F_gsea_supp_table4")) {
 # Genes with |log2FC| > 0.5 are ranked by log2FC (Entrez IDs) for gseGO / gseKEGG / gseWP / gsePathway; pvalueCutoff = 1
 # so every pathway shown in Fig 2F has an NES (significance is shown by colour). Leading-edge genes are given as symbols.
-# Outputs: supp_table4_gsea_all.csv (Supp Table 4), fig1f_gsea_symfix_plotted.csv (Fig 2F values)
+# Outputs: supp_table4_gsea_all.csv (Supp Table 4), fig1f_gsea_plotted.csv (Fig 2F values)
 suppressMessages({library(dplyr); library(DOSE); library(org.Hs.eg.db); library(AnnotationDbi)
   library(clusterProfiler); library(ReactomePA)})
 OUT <- "/share/fsmresfiles/UC/revision_jenny/Fig1F_gsea_selenop_symfix"
-degs <- read.csv(file.path(OUT, "cd68_selenop_pos_neg_degs_symfix.csv"))
+degs <- read.csv(file.path(OUT, "cd68_selenop_pos_neg_degs.csv"))
 degs <- degs %>% filter(avg_log2FC > 0.5 | avg_log2FC < -0.5) %>% select(X, avg_log2FC) %>% rename(gene = X)
 degs$entrez <- as.vector(mapIds(org.Hs.eg.db, keys = degs$gene, column = "ENTREZID", keytype = "SYMBOL", multiVals = "first"))
 degs <- degs %>% filter(!is.na(entrez)) %>% arrange(-avg_log2FC)
@@ -97,8 +77,7 @@ f <- all_gsea %>% filter(ID %in% fig2f_ids) %>%
     Description = paste0(ID, ": ", Description)) %>%
   arrange(NES)
 write.csv(f %>% select(ID, Description, Database, setSize, NES, pvalue, p.adjust) %>% mutate(across(where(is.numeric), ~ signif(.x, 3))),
-          file.path(OUT, "fig1f_gsea_symfix_plotted.csv"), row.names = FALSE)
-print(f %>% select(Description, Database, NES, p.adjust))
+          file.path(OUT, "fig1f_gsea_plotted.csv"), row.names = FALSE)
 }  # end section F2F_gsea_supp_table4
 
 
@@ -107,10 +86,10 @@ print(f %>% select(Description, Database, NES, p.adjust))
 # Panels: Fig 2F
 # ======================================================================================================================
 if (.run("F2F_gsea_barplot")) {
-# Reads fig1f_gsea_symfix_plotted.csv (section F2F_gsea_supp_table4). Output: fig1f_gsea_selenop.png/.pdf
+# Reads fig1f_gsea_plotted.csv (section F2F_gsea_supp_table4). Output: fig1f_gsea_selenop.png
 suppressMessages({library(dplyr); library(ggplot2)})
 OUT <- "/share/fsmresfiles/UC/revision_jenny/Fig1F_gsea_selenop_symfix"
-f <- read.csv(file.path(OUT, "fig1f_gsea_symfix_plotted.csv")) %>% arrange(NES) %>%
+f <- read.csv(file.path(OUT, "fig1f_gsea_plotted.csv")) %>% arrange(NES) %>%
   mutate(Pathway = factor(Description, levels = Description[order(NES)]),
          Color_Group = case_when(NES > 0 & p.adjust < 0.1 ~ "Higher in SELENOP⁺ (FDR q < 0.1)", NES > 0 ~ "Higher in SELENOP⁺ (q ≥ 0.1)",
                                  NES < 0 & p.adjust < 0.1 ~ "Higher in SELENOP⁻ (FDR q < 0.1)", TRUE ~ "Higher in SELENOP⁻ (q ≥ 0.1)"))
@@ -127,5 +106,4 @@ p <- ggplot(f, aes(x = NES, y = Pathway, fill = Color_Group)) + geom_col() +
   guides(fill = guide_legend(nrow = 2, title.position = "top")) +
   labs(x = "Normalized Enrichment Score (NES)\nSELENOP⁺ vs SELENOP⁻ CD68⁺ myeloid cells", fill = "Pathway enrichment (CD68⁺ myeloid cells, GSEA)")
 ggsave(file.path(OUT, "fig1f_gsea_selenop.png"), plot = p, width = 9, height = 5, dpi = 300)
-ggsave(file.path(OUT, "fig1f_gsea_selenop.pdf"), plot = p, width = 9, height = 5, device = cairo_pdf)   # cairo keeps superscript ⁺/⁻
 }  # end section F2F_gsea_barplot

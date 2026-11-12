@@ -2,8 +2,6 @@ library(Matrix)
 library(dplyr)
 library(Seurat)
 library(harmony)
-library(ggplot2)
-library(RColorBrewer)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 DATA_DIR   <- "/path/to/uc/scrna"          # directory with per-dataset SCT objects

@@ -7,16 +7,13 @@
 #
 # Inputs:
 #   - 9p_harmony_integ.RDS            : Harmony-integrated atlas
-# Outputs (per iteration):
+# Outputs:
 #   - myeloid/mye_iter<N>.RDS         : subclustered Seurat object
 #   - myeloid/mye_iter4_umap.csv      : iteration-4 UMAP + annotation for Python
-#   - myeloid/mye_harmony_iter4.csv   : Harmony embedding for pseudotime
 
 library(Seurat)
 library(harmony)
 library(dplyr)
-library(ggplot2)
-library(RColorBrewer)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 DATA_DIR   <- "/path/to/cd/scrna/output"
@@ -153,12 +150,9 @@ mye4$iter4_anno <- case_when(
 
 saveRDS(mye4, file.path(MYE_DIR, "mye_iter4.RDS"))
 
-# ── Export for Python notebooks ───────────────────────────────────────────────
+# ── Export UMAP for Python notebooks ───────────────────────────────────────────────
 umap_mye              <- as.data.frame(mye4@reductions$umap@cell.embeddings)
 colnames(umap_mye)    <- c("umapharmonymyeiter4_1", "umapharmonymyeiter4_2")
 umap_mye$cell         <- rownames(umap_mye)
 umap_mye$iter4_anno   <- mye4$iter4_anno
 write.csv(umap_mye, file.path(MYE_DIR, "mye_iter4_umap.csv"))
-
-harm_emb <- as.data.frame(mye4@reductions$harmony@cell.embeddings)
-write.csv(harm_emb, file.path(MYE_DIR, "mye_harmony_iter4.csv"))

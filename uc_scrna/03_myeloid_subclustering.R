@@ -1,8 +1,6 @@
 library(dplyr)
 library(Seurat)
 library(harmony)
-library(ggplot2)
-library(RColorBrewer)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 DATA_DIR   <- "/path/to/uc/scrna/output"

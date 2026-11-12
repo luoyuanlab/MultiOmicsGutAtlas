@@ -2,7 +2,7 @@ library(dplyr)
 library(Seurat)
 library(harmony)
 library(ggplot2)
-library(RColorBrewer)
+library(patchwork)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 DATA_DIR   <- "/path/to/uc/scrna/output"
@@ -85,16 +85,10 @@ saveRDS(seur, file.path(OUTPUT_DIR, "con_iter1.RDS"))
 # (see Supp Fig 3A and Fig 2H for the fibroblast UMAP and pseudotime)
 
 # ── 4. Supp Fig 3A: fibroblast marker feature plots on the iteration-4 object ──────
-# Run after con_iter4.RDS exists; output: ed3a_fib_markers_iter4.{png,pdf}.
-# Plotted on the iteration-4 fibroblast UMAP (umap_harmony_con_iter4), the embedding used in Fig 2C and the
-# fibroblast pseudotime panel (Fig 2H).
-library(Seurat); library(ggplot2); library(patchwork)
+# Run after con_iter4.RDS exists; iteration-4 fibroblast UMAP (as in Fig 2C and 2H). Output: ed3a_fib_markers_iter4.png
 O <- '/share/fsmresfiles/UC/revision_jenny/SuppFig3A_fib_marker_umaps'
 uc_fib_iter4 <- readRDS('/share/fsmresfiles/UC/scRNA-seq/merged_9p_wip/subcluster4/con_iter4.RDS')
 ecm <- c('OGN','SFRP2','IGF1','GPNMB','RSPO3','GREM1','C3','THBS2')   # 8 marker genes, in Supp Fig 3A panel order
-stopifnot(all(ecm %in% rownames(uc_fib_iter4)))
 p <- FeaturePlot(uc_fib_iter4, features = ecm, raster = FALSE, reduction = 'umap_harmony_con_iter4', ncol = 4) &
      NoLegend() & labs(x = 'UMAP1', y = 'UMAP2')
 ggsave(file.path(O, 'ed3a_fib_markers_iter4.png'), p, width = 12, height = 6, dpi = 300)
-ggsave(file.path(O, 'ed3a_fib_markers_iter4.pdf'), p, width = 12, height = 6)
-cat('cells', ncol(uc_fib_iter4), '\n'); print(table(uc_fib_iter4$iter4_anno))

@@ -12,18 +12,14 @@
 #   protein_raw_counts.csv    – cell × protein raw count matrix
 #   annotation_table.csv      – per-cell RNA_annotation / Protein_annotation
 #   myeloid/norm_counts.csv   – normalized myeloid RNA counts (from 02_myeloid_protein_selenop.ipynb)
-#   myeloid/myeloid_subtypes_third_round_AUC.csv – first-round AUCell myeloid labels
 #   tcell/good_anno_t_wtcr_norm_counts.csv       – normalized T cell counts (from 04_treg_subset_export.ipynb)
 
 library(Seurat)
-library(ggplot2)
-library(dplyr)
 library(data.table)
 library(AUCell)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 DATA_DIR   <- "/path/to/cite-seq/output"
-SCRNA_DIR  <- "/path/to/cd/scrna/output/merged_cd"
 MYE_DIR    <- file.path(DATA_DIR, "myeloid")
 TCELL_DIR  <- file.path(DATA_DIR, "tcell")
 
@@ -82,12 +78,10 @@ gut_sub     <- subsetGeneSets(gut_set_myeloid, rownames(counts))
 
 set.seed(123)
 cells_AUC     <- AUCell_run(counts, gut_sub)
-save(cells_AUC, file = file.path(MYE_DIR, "pr_rna_myeloid_aucell.RData"))
 
 cells_AUC_mat <- t(getAUC(cells_AUC))
 cell_labels   <- colnames(cells_AUC_mat)[max.col(cells_AUC_mat, "first")]
 result        <- data.frame(cells = rownames(cells_AUC_mat), label = cell_labels)
-print(table(result$label))
 write.csv(result, file.path(MYE_DIR, "pr_rna_myeloid_aucell.csv"))
 
 # ── 3. AUCell T cell subtype annotation (CD atlas reference) ──────────────────
@@ -133,10 +127,8 @@ tgut_sub  <- subsetGeneSets(tgsc, rownames(counts))
 
 set.seed(123)
 cells_AUC     <- AUCell_run(counts, tgut_sub)
-save(cells_AUC, file = file.path(TCELL_DIR, "pr_rna_tcr_tcell_aucell.RData"))
 
 cells_AUC_mat <- t(getAUC(cells_AUC))
 cell_labels   <- colnames(cells_AUC_mat)[max.col(cells_AUC_mat, "first")]
 result        <- data.frame(cells = rownames(cells_AUC_mat), label = cell_labels)
-print(table(result$label))
 write.csv(result, file.path(TCELL_DIR, "pr_rna_tcr_tcell_aucell.csv"))

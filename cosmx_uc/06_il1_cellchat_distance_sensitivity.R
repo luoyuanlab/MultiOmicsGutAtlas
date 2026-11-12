@@ -1,9 +1,8 @@
+# UC CosMx 1K (imputed, YWL-B AUCell labels): CellChat IL-1 signalling between myeloid and fibroblast subtypes, and its
+# sensitivity to the interaction range (200 vs 250 um) and contact range (10 vs 15 um) (Supp 6M).
 library(Seurat)
 library(dplyr)
 library(plyr)
-library(harmony)
-library(SeuratDisk)
-library(viridis)
 library(CellChat)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
@@ -48,7 +47,6 @@ for (nm in names(cosmx_fibmye@images)) {
     cosmx_fibmye@images[[nm]] <- img
   }
 }
-validObject(cosmx_fibmye)
 
 cosmx_tmp          <- cosmx_fibmye
 cosmx_tmp@images   <- list()  # remove FOV payload for spatial locs
@@ -112,7 +110,7 @@ cellchat <- computeCommunProb(cellchat, type = "truncatedMean", trim = 0.1,
                               scale.distance = NULL,
                               contact.dependent = TRUE, contact.range = 10)
 
-# Subset to Fib/Mye cell types and rename for display
+# Fib/Mye cell types kept and display names
 idents_keep <- c(
   "cDC1", "Neutrophil", "HHIP+ Myofib", "GREM2+ Myofib",
   "Mac S+XS-", "cDC2", "Mac S+M+S+", "Activ Fib",
@@ -122,18 +120,24 @@ idents_keep <- c(
   "CXCL5+ Activ Fib", "NRG1+ Crypt Top Fib", "T-interact Fib",
   "VSTM2A+ Crypt Top Fib"
 )
-cellchat <- subsetCellChat(cellchat, idents.use = idents_keep)
-cellchat@meta$label <- gsub("OGN\\+RSPO3\\+ Fib",          "RSPO3+ Fib",       cellchat@meta$label)
-cellchat@meta$label <- gsub("VSTM2A\\+ Crypt Top Fib",     "VSTM2A+ CT Fib",  cellchat@meta$label)
-cellchat@meta$label <- gsub("NRG1\\+ Crypt Top Fib",       "NRG1+ CT Fib",    cellchat@meta$label)
-cellchat@meta$label <- gsub("CXCL5\\+ Activ Fib",          "CXCL5+ Act Fib",  cellchat@meta$label)
-cellchat@meta$label <- gsub("RERGL\\+ Contr Peri",          "RERGL+ Peri",     cellchat@meta$label)
-cellchat <- setIdent(cellchat, ident.use = "label")
+relabel <- function(cc) {
+  cc <- subsetCellChat(cc, idents.use = idents_keep)
+  cc@meta$label <- gsub("OGN\\+RSPO3\\+ Fib",      "RSPO3+ Fib",    cc@meta$label)
+  cc@meta$label <- gsub("VSTM2A\\+ Crypt Top Fib", "VSTM2A+ CT Fib", cc@meta$label)
+  cc@meta$label <- gsub("NRG1\\+ Crypt Top Fib",   "NRG1+ CT Fib",  cc@meta$label)
+  cc@meta$label <- gsub("CXCL5\\+ Activ Fib",       "CXCL5+ Act Fib", cc@meta$label)
+  cc@meta$label <- gsub("RERGL\\+ Contr Peri",      "RERGL+ Peri",   cc@meta$label)
+  setIdent(cc, ident.use = "label")
+}
 
-cellchat <- filterCommunication(cellchat, min.cells = 20)
-cellchat <- computeCommunProbPathway(cellchat)
-cellchat <- aggregateNet(cellchat)
-cellchat <- netAnalysis_computeCentrality(cellchat, slot.name = "netP")
+summarise_network <- function(cc) {
+  cc <- filterCommunication(cc, min.cells = 20)
+  cc <- computeCommunProbPathway(cc)
+  cc <- aggregateNet(cc)
+  netAnalysis_computeCentrality(cc, slot.name = "netP")
+}
+
+cellchat <- summarise_network(relabel(cellchat))
 
 saveRDS(cellchat, file.path(RDS_DIR, "cellchat_fib_mye_ywl_v7_imp.RDS"))
 
@@ -164,23 +168,6 @@ cellchat_ori    <- computeCommunProb(cellchat, type = "truncatedMean", trim = 0.
                                      distance.use = FALSE, interaction.range = 200,
                                      scale.distance = NULL,
                                      contact.dependent = TRUE, contact.range = 10)
-
-relabel <- function(cc) {
-  cc <- subsetCellChat(cc, idents.use = idents_keep)
-  cc@meta$label <- gsub("OGN\\+RSPO3\\+ Fib",      "RSPO3+ Fib",    cc@meta$label)
-  cc@meta$label <- gsub("VSTM2A\\+ Crypt Top Fib", "VSTM2A+ CT Fib", cc@meta$label)
-  cc@meta$label <- gsub("NRG1\\+ Crypt Top Fib",   "NRG1+ CT Fib",  cc@meta$label)
-  cc@meta$label <- gsub("CXCL5\\+ Activ Fib",       "CXCL5+ Act Fib", cc@meta$label)
-  cc@meta$label <- gsub("RERGL\\+ Contr Peri",      "RERGL+ Peri",   cc@meta$label)
-  setIdent(cc, ident.use = "label")
-}
-
-summarise_network <- function(cc) {
-  cc <- filterCommunication(cc, min.cells = 20)
-  cc <- computeCommunProbPathway(cc)
-  cc <- aggregateNet(cc)
-  netAnalysis_computeCentrality(cc, slot.name = "netP")
-}
 
 cellchat_imp250 <- summarise_network(relabel(cellchat_imp250))
 cellchat_imp15  <- summarise_network(relabel(cellchat_imp15))

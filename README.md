@@ -67,7 +67,7 @@ The tables list the code behind each panel and supplementary table. "Not in repo
 |---|---|
 | Fig 1 | Study design (no code) |
 | Fig 2 | A-C `uc_scrna/02-08`; D `uc_scrna/03`; E `uc_scrna/09` (section `F2E_macrophage_subtype_composition`); F `uc_scrna/10` (gene-symbol harmonisation of its input: not in repo); G `uc_scrna/11`; H-J `uc_scrna/12` (per-sample ADAMDEC1⁺ fraction table: not in repo) |
-| Fig 3 | A `cosmx_uc/07` (1K Seurat objects: not in repo); B-C `cosmx_uc/01`, `05`, `06`; D `uc_scrna/14`, `cosmx_uc/11`; E `cosmx_uc/09-11`; F `cosmx_uc/12`; G `uc_scrna/14-15`; H `cosmx_uc/09`, `13-14`; I-J `cosmx_uc/11` |
+| Fig 3 | A `cosmx_uc/05` (1K Seurat objects: not in repo); B-C `cosmx_uc/01`, `03`, `04`; D `uc_scrna/14`, `cosmx_uc/09`; E `cosmx_uc/07-09`; F `cosmx_uc/10`; G `uc_scrna/14-15`; H `cosmx_uc/07`, `11-12`; I-J `cosmx_uc/09` |
 | Fig 4 | A-B `cd_scrna/01-10`; C `cd_scrna/11`; D-F `cd_scrna/12`; G `cd_scrna/14`; H-I `cd_scrna/15-16` |
 | Fig 5 | A `cosmx_cd/14` (WTX biopsies `cosmx_cd/01-02`); B `cosmx_cd/11-12`, `14`; C `cosmx_cd/12-13`; D `cosmx_cd/15`; E-F `cosmx_cd/16`; score and inputs `cosmx_cd/03-10`, `cd_scrna/16` (resection cell metadata table: not in repo) |
 | Fig 6 | A `treatment_validation/03`; B `treatment_validation/04`; data preparation `treatment_validation/01-02` |
@@ -77,7 +77,7 @@ The tables list the code behind each panel and supplementary table. "Not in repo
 | Supp 3 | A `uc_scrna/04` (section 4); B-C `uc_scrna/01`, `06`; D `uc_scrna/09` |
 | Supp 4 | A-B `cite-tcr/01-02`; C-D `uc_scrna/13` |
 | Supp 5 | A-B `uc_scrna/13`; C `uc_scrna/16` |
-| Supp 6 | A-C `cosmx_uc/03`; D `cosmx_uc/02`, `05`, `06`; E `cosmx_uc/12`; F `imputation_model/`; G-H `cosmx_uc/03`, `06`; I `cosmx_uc/06`; J `imputation_benchmark/`; K `cosmx_uc/03`; L `cosmx_uc/04`; M `cosmx_uc/08` |
+| Supp 6 | A-C `cosmx_uc/01`; D `cosmx_uc/03`, `04` (UC 6K QC and normalisation: not in repo); E `cosmx_uc/10`; F `imputation_model/`; G-H `cosmx_uc/01`, `04`; I `cosmx_uc/04`; J `imputation_benchmark/`; K `cosmx_uc/01`; L `cosmx_uc/02`; M `cosmx_uc/06` |
 | Supp 7 | A-E `cd_scrna/01-10`; F `cite-tcr/01`, `03`; G `cd_scrna/11` |
 | Supp 8 | A-E `cd_scrna/13`; F `cd_scrna/14`; G-H `cd_scrna/16`; I `cite-tcr/04-05`, `cosmx_cd/08-09` |
 | Supp 9 | A-B `cosmx_cd/12-13`; C `cosmx_cd/17`; D `cosmx_cd/15`; E-F `cosmx_cd/16` |
@@ -96,7 +96,7 @@ The tables list the code behind each panel and supplementary table. "Not in repo
 
 ### Run order across folders
 
-`uc_scrna` and `cd_scrna` atlases first. `uc_scrna/14` feeds `cosmx_uc/10`. In `cd_scrna`, `12 → 13, 14, 15 → 16`; `cd_scrna/12` and `16` (section `immune_sender_ranking`) feed `cosmx_cd/08-10`; `cosmx_cd/09` feeds `cite-tcr/05`; `cd_scrna/12`, `14` and `cosmx_cd/10` feed `treatment_validation/03`. `imputation_model/` runs before the imputed-1K steps of `cosmx_uc/`.
+`uc_scrna` and `cd_scrna` atlases first. `uc_scrna/14` feeds `cosmx_uc/08`. In `cd_scrna`, `12 → 13, 14, 15 → 16`; `cd_scrna/12` and `16` (section `immune_sender_ranking`) feed `cosmx_cd/08-10`; `cosmx_cd/09` feeds `cite-tcr/05`; `cd_scrna/12`, `14` and `cosmx_cd/10` feed `treatment_validation/03`. `imputation_model/` runs before the imputed-1K steps of `cosmx_uc/`.
 
 ## Citation
 

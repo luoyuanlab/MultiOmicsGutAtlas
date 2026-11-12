@@ -1,59 +1,31 @@
 #!/usr/bin/env python
-"""UC CosMx (WTX, 6K): TNC in OGN+RSPO3+ fibroblasts near MMP1+ macrophages, and TNC vs its upstream regulators.
+"""UC CosMx (WTX, 6K; inflamed UC): TNC in OGN+RSPO3+ fibroblasts near MMP1+ macrophages, and TNC vs its upstream regulators.
 
-Panels made
-  Fig 3F   TNC in OGN+RSPO3+ fibroblasts and MMP1 in Mac S+M+S+ (WTX maps; inset, logistic regression with sample fixed effects)
-  Supp 6E  TNC vs its top NicheNet upstream regulators within OGN+RSPO3+ fibroblasts, against 300 random genes
-
-Inputs
-  /share/fsmresfiles/UC/revision_jenny/UC_shared_inputs/uc_cosmx_colocal_input.h5ad (09_mac_fib_spatial_input.py)
-  /share/fsmresfiles/UC/AtoMx/UC_1k_6k_wholetrans/whole_trans/Processed_merged/v7/h5ad_obj/qc_wtx_v7_merged_anno.h5ad
-  /share/fsmresfiles/UC/revision_jenny/Fig2E_I_J_ligand_regulator_cooccurrence_neighbourhood/intermediate/fig2c_per_piece.csv (11_ligand_regulator_cooccurrence.py)
-
-Outputs
-  /share/fsmresfiles/UC/revision_jenny/Fig2F_tnc_mmp1_spatial/ (panel, pooled and per-piece test CSVs)
-  /share/fsmresfiles/UC/revision_jenny/SuppFig6E_tnc_regulators/ (panel and CSVs)
-
-Run order of sections
-  F3F_tnc_near_mmp1_test -> F3F_tnc_mmp1_map -> S6E_tnc_regulator_correlations -> S6E_tnc_regulator_plot
-
-How to run
-  python <this file>                          run every section in the order below
-  RUN_SECTIONS=<id>[,<id>...] python <file>   run only the listed sections (still in file order)
-  Each section runs one analysis step and reads its inputs from disk, so a single section can be run once its
-  upstream outputs exist. Command-line arguments and environment variables used by a section are listed in its own
-  docstring.
-  Paths are the lab's absolute paths (to be replaced by placeholders before public release).
-  Environment: see the README section "Environment" (OPENBLAS_CORETYPE=SkylakeX on Intel Sapphire Rapids nodes).
+Panels:  Fig 3F (WTX maps; inset = logistic regression with piece fixed effects), Supp 6E (TNC vs its top-7 NicheNet
+         regulators within OGN+RSPO3+ fibroblasts, ranked against 300 random genes)
+Inputs:  uc_cosmx_colocal_input.h5ad (07), WTX h5ad (01, 03)
+Outputs: Fig2F_tnc_mmp1_spatial/ (fig2_tnc_mmp1_combined.png, tnc_near_mmp1_pooled.csv, tnc_near_mmp1_by_piece.csv,
+         tnc_mmp1_boxed_pairs.csv); SuppFig6E_tnc_regulators/ (fig_mmp1_tnc_pathway.png, pathway_spatial_mmp1_tnc.csv,
+         pathway_spatial_tnc_background.csv)
+Run:     python <file>, or RUN_SECTIONS=<id>[,<id>] python <file>
 """
 import os as _os
-_THIS_DIR = _os.path.dirname(_os.path.abspath(__file__))   # repository folder of this file (used for utils/ imports)
+import numpy as np, pandas as pd, anndata as ad, matplotlib
+matplotlib.use('Agg'); import matplotlib.pyplot as plt
+from scipy.spatial import cKDTree
 _RUN_SECTIONS = [_s.strip() for _s in _os.environ.get('RUN_SECTIONS', '').split(',') if _s.strip()]
 
 
 def _run(section):
-    """True if `section` should run: all sections run in file order unless RUN_SECTIONS=id1,id2,... is set."""
     if _RUN_SECTIONS and section not in _RUN_SECTIONS:
         return False
     print(f'===== section {section} =====', flush=True)
     return True
 
 
-# ======================================================================================================================
-# Section F3F_tnc_near_mmp1_test: TNC detection in OGN+RSPO3+ fibroblasts near vs far from MMP1+ SELENOP+MMP9+SPP1+ macrophages
-# Panels: Fig 3F (inset statistics)
-# ======================================================================================================================
+# Section F3F_tnc_near_mmp1_test: TNC detection in OGN+RSPO3+ Fib <= 50 um vs > 50 um from MMP1+ Mac S+M+S+ (Fig 3F inset)
 if _run('F3F_tnc_near_mmp1_test'):
-    __file__ = '/share/fsmresfiles/UC/revision_jenny/Fig2F_tnc_mmp1_spatial/01_tnc_near_mmp1_test.py'   # working folder of this step (relative paths resolve from here)
-    """Compares TNC detection in OGN+RSPO3+ fibroblasts near vs far from MMP1+ SELENOP+MMP9+SPP1+ macrophages.
-Inflamed UC pieces from the Fig 3E cohort (CosMx WTX slide x patient; CosMx 6K, one section per block). Per piece with >=1 MMP1+
-macrophage: OGN+RSPO3+ fibroblasts split by distance to the nearest MMP1+ macrophage (<= 50 um 'near' vs > 50 um 'far');
-TNC detection rate and mean TNC per group. Pieces with >= 3 near fibroblasts are compared pairwise (near vs far within piece);
-pooled: logistic regression of TNC detection on near/far with piece fixed effects.
-Outputs: tnc_near_mmp1_by_piece.csv, tnc_near_mmp1_pooled.csv (inset of the Fig 3F map)"""
-    import numpy as np, pandas as pd, anndata as ad, statsmodels.formula.api as smf
-    from scipy.spatial import cKDTree
-    from scipy.stats import wilcoxon
+    import statsmodels.formula.api as smf
     O = '/share/fsmresfiles/UC/revision_jenny/Fig2F_tnc_mmp1_spatial'; PX = 0.12028; MAX_UM = 50; MIN_NEAR = 3
     def two(a):
         g = a[:, [list(a.var_names).index(x) for x in ('TNC', 'MMP1')]].to_memory(); return g, (g.X.toarray() if hasattr(g.X, 'toarray') else np.asarray(g.X))
@@ -80,34 +52,16 @@ Outputs: tnc_near_mmp1_by_piece.csv, tnc_near_mmp1_pooled.csv (inset of the Fig 
     P = D.groupby(['cohort', 'piece', 'patient', 'near']).agg(n=('tnc', 'size'), tnc_pos_pct=('tnc_pos', lambda v: 100 * v.mean()), tnc_mean=('tnc', 'mean')).unstack('near')
     P.columns = [f'{a}_{"near" if b else "far"}' for a, b in P.columns]; P = P.reset_index()
     ok = P[P.n_near >= MIN_NEAR].dropna(subset=['tnc_pos_pct_far'])
-    print(P.round(2).to_string()); print(f'\npieces with >= {MIN_NEAR} near fibroblasts: {len(ok)} from {ok.patient.nunique()} patients')
-    print('TNC+ % near > far in', int((ok.tnc_pos_pct_near > ok.tnc_pos_pct_far).sum()), 'of', len(ok),
-          '| Wilcoxon P =', round(wilcoxon(ok.tnc_pos_pct_near, ok.tnc_pos_pct_far).pvalue, 4) if len(ok) >= 5 else 'n<5')
     Dk = D[D.piece.isin(P.piece)]
     m = smf.logit('tnc_pos ~ near + C(piece)', Dk).fit(disp=0)
-    print(f'pooled (piece fixed effects): OR near vs far = {np.exp(m.params["near"]):.2f} (95% CI {np.exp(m.conf_int().loc["near", 0]):.2f}-{np.exp(m.conf_int().loc["near", 1]):.2f}), P = {m.pvalues["near"]:.3g}; n fibroblasts = {len(Dk)}, near = {Dk.near.sum()}')
     P.round(3).to_csv(f'{O}/tnc_near_mmp1_by_piece.csv', index=False)
     pd.DataFrame([dict(OR=np.exp(m.params['near']), CI_lo=np.exp(m.conf_int().loc['near', 0]), CI_hi=np.exp(m.conf_int().loc['near', 1]), P=m.pvalues['near'], n_fib=len(Dk), n_near=int(Dk.near.sum()), n_pieces=len(ok), n_patients=ok.patient.nunique(), n_pieces_up=int((ok.tnc_pos_pct_near > ok.tnc_pos_pct_far).sum()))]).to_csv(f'{O}/tnc_near_mmp1_pooled.csv', index=False)
 
 
-# ======================================================================================================================
-# Section F3F_tnc_mmp1_map: TNC / MMP1 co-localization maps of both CosMx WTX slides with a shared colour scale and boxed near pairs
-# Panels: Fig 3F
-# ======================================================================================================================
+# Section F3F_tnc_mmp1_map: TNC / MMP1 maps of both WTX slides, shared colour scale, boxed near pairs (Fig 3F)
 if _run('F3F_tnc_mmp1_map'):
-    __file__ = '/share/fsmresfiles/UC/revision_jenny/Fig2F_tnc_mmp1_spatial/02_tnc_mmp1_spatial_combined.py'   # working folder of this step (relative paths resolve from here)
-    """TNC / MMP1 co-localization panel: both CosMx WTX slides (i0261_i0331_slide4 = I0261, i0261_i0331_slide1 = I0331) side by
-side with ONE shared colour scale per gene (5th-99th percentile of the target cells pooled across both slides) and data-defined
-boxes. Measured expression; expressing cells enlarged and drawn highest on top; no smoothing.
-Boxes: every TNC+ OGN+RSPO3+ fibroblast whose nearest MMP1+ SELENOP+MMP9+SPP1+ macrophage lies within MAX_UM (global coordinates,
-0.12028 um/px), boxed around the pair with PAD_UM padding; overlapping boxes merged. Scale bar instead of pixel axes.
-Inset: pooled OR from tnc_near_mmp1_pooled.csv (section F3F_tnc_near_mmp1_test).
-Output: fig2_tnc_mmp1_combined.png/.pdf, tnc_mmp1_boxed_pairs.csv"""
-    import numpy as np, pandas as pd, anndata as ad, matplotlib
-    matplotlib.use('Agg'); import matplotlib.pyplot as plt
     import matplotlib.cm as cm, matplotlib.colors as mcolors
     from matplotlib.patches import Rectangle, Patch
-    from scipy.spatial import cKDTree
     O = '/share/fsmresfiles/UC/revision_jenny/Fig2F_tnc_mmp1_spatial'
     PX, MAX_UM, PAD_UM, BAR_UM = 0.12028, 50, 60, 500
     S_BG, S_ZERO, S_EXPR, A_EXPR = 4, 4, 26, 1.0     # point sizes (background, non-expressing target, expressing) and alpha
@@ -139,7 +93,6 @@ Output: fig2_tnc_mmp1_combined.png/.pdf, tnc_mmp1_boxed_pairs.csv"""
         return bx, rows
     plt.rcParams.update({'font.size': 13, 'figure.dpi': 300})
     fig = plt.figure(figsize=(14, 13)); gs = fig.add_gridspec(4, 4, width_ratios=[12, 12, 0.5, 3.6], height_ratios=[1, 1, 0.8, 0.2], wspace=0.45, hspace=0.3)
-
     allrows = []; sc = {}
     for k, s in enumerate(SLIDES):
         ax = fig.add_subplot(gs[:, k]); idx = np.where(sl == s)[0]
@@ -164,30 +117,15 @@ Output: fig2_tnc_mmp1_combined.png/.pdf, tnc_mmp1_boxed_pairs.csv"""
     fig.text(0.47, 0.84, f'TNC⁺ odds near (≤ {MAX_UM} µm)\nvs far from MMP1⁺ Mac:\nOR {ST.OR:.1f} (95% CI {ST.CI_lo:.2f}–{ST.CI_hi:.2f})\nP = {pfmt(ST.P)}', ha='center', va='top', fontsize=12)
     lax.legend(handles=[Patch(facecolor='none', edgecolor=BOX, lw=2.2, label=f'TNC⁺ OGN⁺RSPO3⁺ Fib\nwith an MMP1⁺\nSELENOP⁺MMP9⁺SPP1⁺ Mac\nwithin {MAX_UM} µm')],
                loc='upper left', frameon=False, fontsize=11.5, handlelength=1.4)
-    fig.savefig(f'{O}/fig2_tnc_mmp1_combined.png', bbox_inches='tight', pad_inches=0.5); fig.savefig(f'{O}/fig2_tnc_mmp1_combined.pdf', bbox_inches='tight', pad_inches=0.5)
-    R = pd.DataFrame(allrows).round(3); R.to_csv(f'{O}/tnc_mmp1_boxed_pairs.csv', index=False); print(R.to_string()); print('limits', LIM)
+    fig.savefig(f'{O}/fig2_tnc_mmp1_combined.png', bbox_inches='tight', pad_inches=0.5)
+    pd.DataFrame(allrows).round(3).to_csv(f'{O}/tnc_mmp1_boxed_pairs.csv', index=False)
 
 
-# ======================================================================================================================
-# Section S6E_tnc_regulator_correlations: within-fibroblast correlation of TNC with its NicheNet regulators and MMP1-route genes, against random genes
-# Panels: Supp Fig 6E (correlations)
-# ======================================================================================================================
+# Section S6E_tnc_regulator_correlations: pooled Spearman r of MMP1-route genes and TNC regulators vs TNC, and 300 random genes
 if _run('S6E_tnc_regulator_correlations'):
-    __file__ = '/share/fsmresfiles/UC/revision_jenny/SuppFig6E_tnc_regulators/01_pathway_spatial.py'   # working folder of this step (relative paths resolve from here)
-    """Correlations along the MMP1 -> receptor (F2R/PAR1, CD44) -> signalling -> TNC route and between TNC and its top-7 NicheNet
-regulators in OGN+RSPO3+ fibroblasts. Same cohort, pairing and pooling as Fig 3E (11_ligand_regulator_cooccurrence.py):
-inflamed UC CosMx WTX (I0261, I0331; per slide) + CosMx 6K (4 patients; per piece, middle section). Pieces with >= 10
-OGN+RSPO3+ fibroblasts and >= 5 Mac S+M+S+.
-  (a) MMP1 in the nearest Mac S+M+S+ vs each route gene in the fibroblast;
-  (b) within the fibroblast, each route gene / regulator vs TNC.
-Per-piece Spearman r pooled across pieces by random-effects meta-analysis (Fisher z, var 1.06/(n-3)). Within-fibroblast
-correlations are ranked against TNC's correlation with 300 random genes detected in >= 5% of OGN+RSPO3+ fibroblasts
-(background_percentile).
-Outputs: pathway_spatial_mmp1_tnc.csv, pathway_spatial_tnc_background.csv."""
     import warnings; warnings.filterwarnings('ignore')
-    import numpy as np, pandas as pd, scanpy as sc
+    import scanpy as sc
     from scipy import stats
-    from scipy.spatial import cKDTree
     O='/share/fsmresfiles/UC/revision_jenny/SuppFig6E_tnc_regulators'; PX=0.12028
     def lognorm(a):
         a=a.copy(); sc.pp.normalize_total(a); sc.pp.log1p(a); return a
@@ -241,28 +179,14 @@ Outputs: pathway_spatial_mmp1_tnc.csv, pathway_spatial_tnc_background.csv."""
     BGD=pd.DataFrame(bg); BGD.to_csv(f'{O}/pathway_spatial_tnc_background.csv',index=False)
     for o in out:
         if o['test'].startswith('within'): o['background_percentile']=100*(BGD.r<o['r']).mean()
-    print('background genes',len(BGD),'median r',round(BGD.r.median(),4),'95th pct',round(BGD.r.quantile(0.95),4))
-    T=pd.DataFrame(out); T.to_csv(f'{O}/pathway_spatial_mmp1_tnc.csv',index=False); print(T.round(4).to_string(index=False)); print('SAVED')
+    pd.DataFrame(out).to_csv(f'{O}/pathway_spatial_mmp1_tnc.csv',index=False)
 
 
-# ======================================================================================================================
-# Section S6E_tnc_regulator_plot: bar plot of TNC vs its upstream regulators within OGN+RSPO3+ fibroblasts (inflamed UC, CosMx WTX + 6K)
-# Panels: Supp Fig 6E
-# ======================================================================================================================
+# Section S6E_tnc_regulator_plot: TNC vs its upstream regulators (Supp 6E)
 if _run('S6E_tnc_regulator_plot'):
-    __file__ = '/share/fsmresfiles/UC/revision_jenny/SuppFig6E_tnc_regulators/02_fig_pathway.py'   # working folder of this step (relative paths resolve from here)
-    """TNC vs its upstream regulators within OGN+RSPO3+ fibroblasts (inflamed UC, CosMx WTX + 6K).
-Regulators = TNC's top-7 NicheNet gene-regulatory regulators. Numbers above bars = percentile of each regulator's r among TNC's r with 300
-random detected genes (set-level P = 0.0001). Bars: pooled Spearman r (random effects across samples), 95% CI;
-colors P < 0.05 / < 0.1 / >= 0.1. MMP1 vs fibroblast CD44 / F2R / TNC is reported in pathway_spatial_mmp1_tnc.csv only.
-Inputs from section S6E_tnc_regulator_correlations. Output: fig_mmp1_tnc_pathway.png."""
-    import numpy as np, pandas as pd, matplotlib
-    matplotlib.use('Agg'); import matplotlib.pyplot as plt
     from matplotlib.patches import Patch
     O='/share/fsmresfiles/UC/revision_jenny/SuppFig6E_tnc_regulators'
     T=pd.read_csv(f'{O}/pathway_spatial_mmp1_tnc.csv'); BG=pd.read_csv(f'{O}/pathway_spatial_tnc_background.csv')
-    PP=pd.read_csv('/share/fsmresfiles/UC/revision_jenny/Fig2E_I_J_ligand_regulator_cooccurrence_neighbourhood/intermediate/fig2c_per_piece.csv').drop_duplicates(['cohort','slide'])
-    npat=len({p for c,sl in zip(PP.cohort,PP.slide) for p in (['I0261','I0331'] if c=='WTX' else [sl.split('_')[0]])})   # WTX slides hold I0261 + I0331
     col=lambda p: '#D62828' if p<0.05 else '#F77F00' if p<0.1 else '#FCBF49'
     plt.rcParams.update({'font.size':11,'figure.dpi':300,'axes.spines.top':False,'axes.spines.right':False})
     B=T[T.test.str.startswith('within')&T.gene.isin(['SMAD3','JUN','STAT3','SMAD4','FLI1','SMAD2','RELA'])].sort_values('r',ascending=False).reset_index(drop=True)
@@ -277,4 +201,4 @@ Inputs from section S6E_tnc_regulator_correlations. Output: fig_mmp1_tnc_pathway
     ax.legend(handles=[Patch(facecolor='#D62828',edgecolor='black',label='P < 0.05'),Patch(facecolor='#F77F00',edgecolor='black',label='P < 0.1'),
                        Patch(facecolor='#FCBF49',edgecolor='black',label='P ≥ 0.1')],
               loc='upper center',bbox_to_anchor=(0.5,-0.2),ncol=3,frameon=False,fontsize=9.5)
-    plt.tight_layout(); fig.savefig(f'{O}/fig_mmp1_tnc_pathway.png',bbox_inches='tight'); plt.close(fig); print('SAVED')
+    plt.tight_layout(); fig.savefig(f'{O}/fig_mmp1_tnc_pathway.png',bbox_inches='tight'); plt.close(fig)

@@ -72,6 +72,3 @@ atlas[["RNA"]] <- JoinLayers(atlas[["RNA"]])
 saveRDS(atlas, file.path(DATA_DIR, "merged_cd/cleaned_annoed_all_cell_types.RDS"))
 write.csv(atlas@meta.data,
           file.path(DATA_DIR, "merged_cd/meta_cleaned_annoed_all_cell_types.csv"))
-
-cat("Atlas assembled:", ncol(atlas), "cells,", nrow(atlas), "genes\n")
-print(table(atlas$label))

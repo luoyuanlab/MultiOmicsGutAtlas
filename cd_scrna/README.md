@@ -16,7 +16,7 @@ Panel letters refer to the figures (Fig 4 = CD Treg pseudotime).
 | `06_other_lineages_subclustering.R` | Remaining lineages | atlas → lineage objects | Fig 4A |
 | `07_epithelial_subclustering.R` | Epithelial sub-clustering and annotation | atlas → epithelial object | Supp 7D |
 | `08_atlas_assembly.R` | Merges the annotated lineages into the atlas | 03-07 → atlas and count matrix | Fig 4A |
-| `09_atlas_h5ad_conversion.ipynb` | Builds the h5ad (X rows and `.obs` in sorted-barcode order) and attaches the labels | 08 export → `cleaned_annoed_all_cell_types_rowfix.h5ad` | input of 10-15 |
+| `09_atlas_h5ad_conversion.ipynb` | Builds the h5ad (X rows and `.obs` in sorted-barcode order) and attaches the labels | 08 export → `cd_atlas_annotated.h5ad` | input of 10-15 |
 | `10_umaps.ipynb` | Atlas and lineage UMAPs | UMAP tables, 09 h5ad → plots | Fig 4A-B, Supp 7A-E |
 | `11_sccoda_composition.ipynb` | scCODA of cell-type abundance by location and activity (overall, T cells, myeloid cells) | 09 h5ad → effects, forest plots | Fig 4C, Supp 7G |
 | `12_treg_pseudotime.py` | Treg input objects; strict Treg selection, Harmony, Leiden, diffusion pseudotime from the core Treg sub-cluster; module UMAPs, markers by bin, Suppressive Core Score vs pseudotime (LMM, sign test) | 09 h5ad → `treg_pseudotime.h5ad`, panels | Fig 4D-F |

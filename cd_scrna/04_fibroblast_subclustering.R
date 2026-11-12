@@ -10,12 +10,10 @@
 # Outputs:
 #   - connective/con_iter2.RDS          : annotated subclustered object
 #   - connective/con_iter2_umap.csv     : UMAP + annotation for Python
-#   - connective/con_harmony_iter2.csv  : Harmony embedding for pseudotime
 
 library(Seurat)
 library(harmony)
 library(dplyr)
-library(ggplot2)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 DATA_DIR   <- "/path/to/cd/scrna/output"
@@ -117,12 +115,9 @@ con2$iter2_anno <- case_when(
 
 saveRDS(con2, file.path(CON_DIR, "con_iter2.RDS"))
 
-# ── Export for Python notebooks ───────────────────────────────────────────────
+# ── Export UMAP for Python notebooks ───────────────────────────────────────────────
 umap_con           <- as.data.frame(con2@reductions$umap@cell.embeddings)
 colnames(umap_con) <- c("umapharmonyconiter2_1", "umapharmonyconiter2_2")
 umap_con$cell      <- rownames(umap_con)
 umap_con$iter2_anno <- con2$iter2_anno
 write.csv(umap_con, file.path(CON_DIR, "con_iter2_umap.csv"))
-
-harm_emb <- as.data.frame(con2@reductions$harmony@cell.embeddings)
-write.csv(harm_emb, file.path(CON_DIR, "con_harmony_iter2.csv"))

@@ -11,17 +11,12 @@ COSMX_DIR  <- "/path/to/imputation_model/data/Spatial_Protein_CosMx"
 # Shared gene set collection (50 cell types)
 load(file.path(SCRNA_DIR, "cell_type_markers_gene_sets.RData"))
 
-# UC multi-omics samples to annotate
+# UC multi-omics section to annotate (385R_381R)
 samples <- list(
   list(
     csv    = file.path(COSMX_DIR, "count_csv/Cos4_UC_M_batch1_S2_norm_nolog.csv"),
     outdir = file.path(COSMX_DIR, "aucell"),
     tag    = "Cos4_UC_M_batch1_S2"
-  ),
-  list(
-    csv    = file.path(COSMX_DIR, "count_csv/Cos4_UC_M_batch2_S2_norm_nolog.csv"),
-    outdir = file.path(COSMX_DIR, "aucell"),
-    tag    = "Cos4_UC_M_batch2_S2"
   )
 )
 
@@ -46,8 +41,6 @@ for (s in samples) {
   cell_labels     <- colnames(cells_AUC_mat)[max_col_indices]
 
   result <- data.frame(cells = rownames(cells_AUC_mat), label = cell_labels)
-  print(table(result$label))
-
   write.csv(result, file.path(s$outdir, paste0(s$tag, "_norm_nolog_anno.csv")))
 
   message("Done: ", s$tag)

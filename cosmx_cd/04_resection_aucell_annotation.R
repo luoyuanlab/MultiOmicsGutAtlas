@@ -1,3 +1,4 @@
+# CD resections (CosMx 6K): AUCell cell-type labels for every run (shared 50-type gene sets); writes <run>/aucell_anno.csv.
 library(Seurat)
 library(AUCell)
 library(GSEABase)
@@ -27,8 +28,6 @@ samples <- c(
 )
 
 for (sample in samples) {
-  message("Starting: ", sample)
-
   file     <- file.path(RESECT_DIR, sample, "Processed", "norm_counts.csv")
   anno_dir <- file.path(RESECT_DIR, sample)
 
@@ -45,9 +44,6 @@ for (sample in samples) {
   counts <- GetAssayData(object = norm_1k_so, slot = "counts")
   gut_sub <- subsetGeneSets(gsc, rownames(counts))
   cells_AUC <- AUCell_run(counts, gut_sub)
-
-  # Save AUCell results
-  save(cells_AUC, file = file.path(anno_dir, "aucell_anno.Rdata"))
 
   # Extract AUC matrix and get top-scoring labels
   cells_AUC_mat <- t(getAUC(cells_AUC))

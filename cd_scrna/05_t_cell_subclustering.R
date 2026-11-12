@@ -11,12 +11,10 @@
 #   - t_cells/tcell_iter3.RDS            : annotated T cell object
 #   - t_cells/nk_iter0.RDS              : NK cells (for further subclustering)
 #   - t_cells/tcell_iter3_umap.csv       : UMAP + annotation for Python
-#   - t_cells/t_harmony_iter3.csv        : Harmony embedding for pseudotime
 
 library(Seurat)
 library(harmony)
 library(dplyr)
-library(ggplot2)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 DATA_DIR <- "/path/to/cd/scrna/output"
@@ -144,12 +142,9 @@ tcell3_input$iter3_anno <- case_when(
 
 saveRDS(tcell3_input, file.path(T_DIR, "tcell_iter3.RDS"))
 
-# ── Export for Python notebooks ───────────────────────────────────────────────
+# ── Export UMAP for Python notebooks ───────────────────────────────────────────────
 umap_t             <- as.data.frame(tcell3_input@reductions$umap@cell.embeddings)
 colnames(umap_t)   <- c("umapharmonytcelliter3_1", "umapharmonytcelliter3_2")
 umap_t$cell        <- rownames(umap_t)
 umap_t$iter3_anno  <- tcell3_input$iter3_anno
 write.csv(umap_t, file.path(T_DIR, "tcell_iter3_umap.csv"))
-
-harm_emb <- as.data.frame(tcell3_input@reductions$harmony@cell.embeddings)
-write.csv(harm_emb, file.path(T_DIR, "t_harmony_iter3.csv"))

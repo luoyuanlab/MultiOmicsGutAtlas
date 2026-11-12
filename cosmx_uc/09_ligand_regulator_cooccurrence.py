@@ -1,75 +1,32 @@
 #!/usr/bin/env python
-"""UC CosMx (1K imputed, 6K, WTX): macrophage ligand vs fibroblast regulator co-expression, co-occurrence and neighbourhoods.
+"""UC CosMx (1K validation imputed, 6K, WTX; inflamed UC): macrophage ligand vs fibroblast regulator co-expression,
+activated-fibroblast co-occurrence and neighbour models, and the NicheNet ligand activity plot.
 
-Panels made
-  Fig 3D  NicheNet ligand activity of Mac S+M+S+ ligands (scRNA-seq), with % expressing in WTX
-  Fig 3E  ligand in the nearest Mac S+M+S+ vs regulator in each OGN+RSPO3+ fibroblast, Spearman r pooled by random-effects meta-analysis
-  Fig 3I  co-occurrence of activated fibroblasts with myeloid and fibroblast populations
-  Fig 3J  odds of fibroblast activation per neighbouring myeloid cell (20 nearest cells, SEs clustered by piece)
-  Supp tables for Fig 3E and 3J
-
-Inputs
-  /share/fsmresfiles/UC/revision_jenny/UC_shared_inputs/uc_cosmx_colocal_input.h5ad (09_mac_fib_spatial_input.py)
-  /share/fsmresfiles/UC/AtoMx/UC_serial_cuts/1000plex/I0286RI0277R1119/ (1K validation object and imputed AUCell labels, 04-05)
-  /share/fsmresfiles/UC/AtoMx/UC_1k_6k_wholetrans/whole_trans/Processed_merged/v7/h5ad_obj/qc_wtx_v7_merged_anno.h5ad (01_wtx_processing.ipynb, 05_aucell_annotation.R)
-  /share/fsmresfiles/UC/scRNA-seq/merged_9p_wip/ (cell_type_name_mapper.csv; ogn_spp1_mac_nichenet_ligand_activities.csv from
-    uc_scrna/14_nichenet_macrophage_to_fibroblast.R; ogn_spp1_mac_nichenet_tf_spatial_validation_combined_v2.csv, the
-    ligand-regulator pair list from 10_wtx_ligand_regulator_pairs.ipynb)
-
-Outputs
-  /share/fsmresfiles/UC/revision_jenny/Fig2E_I_J_ligand_regulator_cooccurrence_neighbourhood/ (panels, supp tables, intermediate/fig2c_per_piece.csv)
-  /share/fsmresfiles/UC/revision_jenny/Fig2D_nichenet_ligand_activity/fig1i_ligand_activity.png
-
-Run order of sections
-  F3EIJ_ligand_regulator_cooccurrence -> F3D_ligand_activity
-
-How to run
-  python <this file>                          run every section in the order below
-  RUN_SECTIONS=<id>[,<id>...] python <file>   run only the listed sections (still in file order)
-  Each section runs one analysis step and reads its inputs from disk, so a single section can be run once its
-  upstream outputs exist. Command-line arguments and environment variables used by a section are listed in its own
-  docstring.
-  Paths are the lab's absolute paths (to be replaced by placeholders before public release).
-  Environment: see the README section "Environment" (OPENBLAS_CORETYPE=SkylakeX on Intel Sapphire Rapids nodes).
+Panels:  Fig 3D (ligand activity), 3E (ligand-regulator correlation), 3I (co-occurrence), 3J (neighbour forest)
+Inputs:  uc_cosmx_colocal_input.h5ad (07), 1K validation object and imputed AUCell labels (02, 03), WTX h5ad (01, 03),
+         NicheNet ligand activities (uc_scrna/14), ligand-regulator pair table (08)
+Outputs: Fig2E_I_J_ligand_regulator_cooccurrence_neighbourhood/ (fig2c_bar_combined.png, fig2m_cooccurrence_allsamples.png,
+         fig2n_forest_allsamples.png, supp_table_fig2c_allsamples.csv, supp_table_fig2n_allsamples.csv,
+         intermediate/fig2c_per_piece.csv (read by 10), intermediate/fig2m_allsamples_scores.csv);
+         Fig2D_nichenet_ligand_activity/fig1i_ligand_activity.png
+Run:     python <file>, or RUN_SECTIONS=<id>[,<id>] python <file>
 """
 import os as _os
-_THIS_DIR = _os.path.dirname(_os.path.abspath(__file__))   # repository folder of this file (used for utils/ imports)
 _RUN_SECTIONS = [_s.strip() for _s in _os.environ.get('RUN_SECTIONS', '').split(',') if _s.strip()]
 
 
 def _run(section):
-    """True if `section` should run: all sections run in file order unless RUN_SECTIONS=id1,id2,... is set."""
     if _RUN_SECTIONS and section not in _RUN_SECTIONS:
         return False
     print(f'===== section {section} =====', flush=True)
     return True
 
 
-# ======================================================================================================================
-# Section F3EIJ_ligand_regulator_cooccurrence: ligand-regulator spatial correlation, activated-fibroblast co-occurrence and neighbour models (inflamed UC)
-# Panels: Fig 3E, 3I, 3J
-# ======================================================================================================================
+# Section F3EIJ_ligand_regulator_cooccurrence: Fig 3E (per-piece Spearman r, random-effects pooled), 3J (logit, SEs clustered
+# by piece, BH over 8 predictors), 3I (co-occurrence with activated fibroblasts)
 if _run('F3EIJ_ligand_regulator_cooccurrence'):
-    __file__ = '/share/fsmresfiles/UC/revision_jenny/Fig2E_I_J_ligand_regulator_cooccurrence_neighbourhood/01_fig2cmn_allsamples.py'   # working folder of this step (relative paths resolve from here)
-    """Ligand-regulator spatial correlation, activated-fibroblast co-occurrence and neighbour models in all inflamed UC samples:
-1K validation (I0277, I0286; 4 pieces; imputed-1K AUCell labels) + CosMx 6K ProSeg (middle section; i0350, i0463, i0548, i0606;
-6 pieces; AUCell labels) + WTX (I0261, I0331; inflamed; aucell_cell_type_short). Piece = tissue piece within a patient.
-
-Fig 3E: top 50 NicheNet ligands (Mac S+M+S+ -> OGN+RSPO3+ Fib, AUROC) present in the panel; regulators per ligand from
-ogn_spp1_mac_nichenet_tf_spatial_validation_combined_v2.csv (exact ligand match); per piece (>= 10 OGN+RSPO3+ Fib,
->= 5 Mac S+M+S+), Spearman r of the ligand in the nearest Mac S+M+S+ vs the regulator in each OGN+RSPO3+ Fib. WTX and
-6K pieces combined; per-piece r pooled by random-effects meta-analysis (95% CI); pairs with |r| >= 0.03 shown (top 19),
-grouped by P bin (<0.05, <0.1, >=0.1) and ranked by |r| within bin; bars colored by P; BH-FDR across all pairs in the CSV.
-Expression: log-normalized.
-Fig 3J: fibroblast activation ~ counts of each myeloid type among the 20 nearest cells (per piece, global coordinates),
-logistic regression, SEs clustered by piece; BH-FDR over the 8 predictors.
-Fig 3I: co-occurrence score (squidpy definition) of activated fibroblasts with fibroblast/myeloid groups, pair counts within
-pieces pooled over pieces, 20-um shells to 500 um; DC, ADAMDEC1+ Fib, Trans cDC2/Mac, T-interact Fib and Crypt Top Fib not
-plotted.
-Outputs: fig2c_bar_combined.png, fig2n_forest_allsamples.png, fig2m_cooccurrence_allsamples.png,
-supp_table_fig2c_allsamples.csv, supp_table_fig2n_allsamples.csv."""
     import warnings; warnings.filterwarnings('ignore')
-    import os, numpy as np, pandas as pd, scanpy as sc, squidpy as sq, matplotlib
+    import numpy as np, pandas as pd, scanpy as sc, matplotlib
     matplotlib.use('Agg'); import matplotlib.pyplot as plt
     from matplotlib.colors import ListedColormap
     from matplotlib.patches import Patch
@@ -128,7 +85,6 @@ supp_table_fig2c_allsamples.csv, supp_table_fig2n_allsamples.csv."""
         m=d0.groupby(['ligand','TF']).apply(meta).reset_index(); m['q']=stats.false_discovery_control(m['p']); m['analysis']=name; res.append(m)   # BH-FDR across all pairs (reported in CSV/text)
     M=pd.concat(res,ignore_index=True)
     CMB=M[(M.analysis=='Combined')&(M.r.abs()>=0.03)].assign(nr=lambda x: -x.r.abs(),pbin=lambda x: np.where(x.p<0.05,0,np.where(x.p<0.1,1,2))).sort_values(['pbin','nr']).head(19)   # grouped by P bin, |r| descending within bin; display |r| >= 0.03; FDR over all pairs
-    npat_c=len(set(W.obs.patient)|set(S.obs.patient))
     fig,ax=plt.subplots(figsize=(8.2,max(3.6,0.24*len(CMB)+1.4))); y=np.arange(len(CMB))
     cols=['#D62828' if p<0.05 else '#F77F00' if p<0.1 else '#FCBF49' for p in CMB['p']]
     ax.barh(y,CMB['r'],color=cols,edgecolor='black',linewidth=1.2)
@@ -148,7 +104,6 @@ supp_table_fig2c_allsamples.csv, supp_table_fig2n_allsamples.csv."""
     M.assign(nr=lambda x: -x.r.abs(),analysis=lambda x: x.analysis.replace({'Serial 6K':'6K','Combined':'WTX + 6K'})).sort_values(['analysis','p','nr']).assign(**{'Spearman r (95% CI)':lambda x: [f'{g3(a)} ({g3(b)}–{g3(c)})' for a,b,c in zip(x.r,x.r_lo,x.r_hi)],
         'P':lambda x: x.p.map(g3),'FDR q (all pairs)':lambda x: x.q.map(g3)})[['analysis','ligand','TF','Spearman r (95% CI)','P','FDR q (all pairs)','pieces','n_fibs']].rename(columns={
         'analysis':'Cohort','ligand':'Ligand (Mac S+M+S+)','TF':'Regulator (OGN+RSPO3+ Fib)','pieces':'Tissue pieces','n_fibs':'Fibroblasts'}).to_csv(f'{O}/supp_table_fig2c_allsamples.csv',index=False)
-    print(M[(M.ligand=='MMP1')&(M.TF=='TNC')].round(4).to_string(index=False)); print(CMB.round(4).to_string(index=False))
 
     # ---------------- Fig 3J: myeloid neighbours and fibroblast activation ----------------
     EXC={'Cycl Fib','CD36+ Peri','RERGL+ Contr Peri','SELENOP+ Fib'}
@@ -178,7 +133,6 @@ supp_table_fig2c_allsamples.csv, supp_table_fig2n_allsamples.csv."""
     R.assign(**{'OR (95% CI)':[f'{g3(a)} ({g3(b)}–{g3(c)})' for a,b,c in zip(R.OR,R.CI_low,R.CI_high)],'FDR q':R.adj_p.map(g3),
                 'SE clustered by':R.clustered_by.map({'sample':'tissue piece','patient':'patient'}),'Patients':npat,'Tissue pieces':npc,'Fibroblasts':len(df)})[
         ['SE clustered by','Predictor','OR (95% CI)','FDR q','Patients','Tissue pieces','Fibroblasts']].rename(columns={'Predictor':'Myeloid neighbour'}).to_csv(f'{O}/supp_table_fig2n_allsamples.csv',index=False)
-    print(R.round(4).to_string(index=False))
     # forest plot; stars = BH-FDR q < 0.1 / 0.05 / 0.01
     custom_palette=["#FF9999","#66B3FF","#99FF99","#FFD700","#FF69B4","#8A2BE2","#00BFFF","#ADFF2F","#FF4500","#DDA0DD","#20B2AA","#778899",
                     "#FFA500","#7B68EE","#D2691E","#00FA9A","#B22222","#32CD32"]
@@ -199,9 +153,7 @@ supp_table_fig2c_allsamples.csv, supp_table_fig2n_allsamples.csv."""
     plt.tight_layout(); fig.savefig(f'{O}/fig2n_forest_allsamples.png',bbox_inches='tight',dpi=300); plt.close(fig)
 
     # ---------------- Fig 3I: co-occurrence with activated fibroblasts ----------------
-    # Co-occurrence score as defined in squidpy (P(group | partner of an activated fibroblast at distance d) / P(group | any pair
-    # at distance d)), computed directly: pairs counted within each piece in 10-um distance shells, counts pooled over pieces.
-    # (computed directly because squidpy co_occurrence on one object holding spatially offset pieces does not give scores centred on 1)
+    # squidpy co-occurrence score computed directly: pair counts within each piece in 20-um shells, pooled over pieces
     def fm_group(i):
         if i in ['Mac S+XS-','Mac S+SG+']: return 'Mac S+SG+'
         if i in ['cDC1','cDC2','CCR7+ DC']: return 'DC'
@@ -209,13 +161,13 @@ supp_table_fig2c_allsamples.csv, supp_table_fig2n_allsamples.csv."""
         if 'Myofib' in i: return 'Myofib'
         if 'Crypt Top' in i: return 'Crypt Top Fib'
         return i
-    EDGES=np.arange(0,520,20.0); cats=None; N=None; ncell=0
+    EDGES=np.arange(0,520,20.0)
     pieces=[]
     for a in COH:
         for pc in a.obs['piece'].unique():
             pm=(a.obs['piece']==pc).values; lab=a.obs['ct'].values[pm]
             keep=np.array([CAT.get(c) in ('Myeloid','Connective') for c in lab]); g=np.array([fm_group(c) for c in lab[keep]])
-            ok=~np.isin(g,['Cycl Myeloid','Cycl Fib','Pericyte','SELENOP+ Fib']); pieces.append((g[ok],a.obsm['xy'][pm][keep][ok])); ncell+=ok.sum()
+            ok=~np.isin(g,['Cycl Myeloid','Cycl Fib','Pericyte','SELENOP+ Fib']); pieces.append((g[ok],a.obsm['xy'][pm][keep][ok]))
     cats=sorted(set(np.concatenate([p[0] for p in pieces]))); ci={c:i for i,c in enumerate(cats)}
     N=np.zeros((len(EDGES)-1,len(cats),len(cats)))
     for g,xy in pieces:
@@ -236,28 +188,18 @@ supp_table_fig2c_allsamples.csv, supp_table_fig2n_allsamples.csv."""
     ax.set_title(''); ax.set_ylabel('Co-occurrence Score w/ Activ Fib'); ax.set_xlabel('Distance (µm)'); ax.set_xlim(20,500)
     ax.legend(title='Cell Type',frameon=False,loc='center left',bbox_to_anchor=(1.02,0.5),fontsize=9,title_fontsize=9,handlelength=1.2,handletextpad=0.4)
     plt.tight_layout(); fig.savefig(f'{O}/fig2m_cooccurrence_allsamples.png',bbox_inches='tight',dpi=300); plt.close(fig)
-    print('patients',npat,'pieces',npc,'cells in 2M',ncell); print('SAVED')
 
 
-# ======================================================================================================================
-# Section F3D_ligand_activity: NicheNet ligand activity of Mac S+M+S+ ligands, highlighting ligands with spatial support in Fig 3E
-# Panels: Fig 3D
-# ======================================================================================================================
+# Section F3D_ligand_activity: NicheNet AUROC of the top 20 Mac S+M+S+ ligands; highlighted = a pair at P < 0.1 in Fig 3E
 if _run('F3D_ligand_activity'):
-    __file__ = '/share/fsmresfiles/UC/revision_jenny/Fig2D_nichenet_ligand_activity/01_fig1i_ligand_activity.py'   # working folder of this step (relative paths resolve from here)
-    """NicheNet ligand activity plot. Highlighted: ligands with at least one ligand-regulator pair at P < 0.1 in the pooled
-WTX + 6K Fig 3E analysis (supp_table_fig2c_allsamples.csv, cohort 'Combined') -> MMP1, CTSD, CALM1.
-Bars: NicheNet AUROC (scRNA-seq; Mac S+M+S+ ligands vs genes up in OGN+RSPO3+ vs ADAMDEC1+ fibroblasts), top 20 ligands
-present on the WTX panel; % = Mac S+M+S+ cells expressing the ligand in inflamed WTX (I0261, I0331).
-Output: fig1i_ligand_activity.png."""
     import warnings; warnings.filterwarnings('ignore')
     import numpy as np, pandas as pd, scanpy as sc, matplotlib
     matplotlib.use('Agg'); import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
     O='/share/fsmresfiles/UC/revision_jenny/Fig2D_nichenet_ligand_activity'; F2='/share/fsmresfiles/UC/revision_jenny/Fig2E_I_J_ligand_regulator_cooccurrence_neighbourhood'; NN='/share/fsmresfiles/UC/scRNA-seq/merged_9p_wip'
     ligand_activities=pd.read_csv(f'{NN}/ogn_spp1_mac_nichenet_ligand_activities.csv')
-    T=pd.read_csv(f'{F2}/supp_table_fig2c_allsamples.csv'); T=T[T.Cohort=='Combined']
-    validated=sorted(set(T.loc[T['P'].astype(float)<0.1,'Ligand (Mac S+M+S+)'])); print('highlighted:',validated)
+    T=pd.read_csv(f'{F2}/supp_table_fig2c_allsamples.csv'); T=T[T.Cohort=='WTX + 6K']
+    validated=sorted(set(T.loc[T['P'].astype(float)<0.1,'Ligand (Mac S+M+S+)']))
     adata_wtx=sc.read_h5ad('/share/fsmresfiles/UC/AtoMx/UC_1k_6k_wholetrans/whole_trans/Processed_merged/v7/h5ad_obj/qc_wtx_v7_merged_anno.h5ad')
     adata_wtx=adata_wtx[adata_wtx.obs['patient'].isin(['I0261','I0331'])]
     top_ligands=ligand_activities.nlargest(50,'auroc')
@@ -291,4 +233,3 @@ Output: fig1i_ligand_activity.png."""
                      Line2D([0],[0],marker='o',color='w',markerfacecolor='#A8DADC',markersize=10,markeredgecolor='black',markeredgewidth=1,label='Predicted')]
     ax.legend(handles=legend_elements,loc='upper left',bbox_to_anchor=(0.72,1.0),fontsize=9.5,frameon=True,borderaxespad=0)
     plt.tight_layout(); fig.savefig(f'{O}/fig1i_ligand_activity.png',bbox_inches='tight',dpi=300); plt.close(fig)
-    print(ligand_df[['test_ligand','auroc_x','pct_macs_expressing']].round(3).to_string(index=False)); print('SAVED')
