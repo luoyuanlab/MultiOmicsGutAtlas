@@ -1,171 +1,107 @@
 # MultiOmics Gut Atlas
 
-Code accompanying **"An integrated single-cell and spatial atlas identifies OGN⁺RSPO3⁺ fibroblasts as a conserved disease mechanism across ulcerative colitis and Crohn's disease."**
+Code for **"Integrated single-cell and spatial atlases reveal myeloid–stromal niches linked to tissue remodeling and immune regulation in inflammatory bowel disease."**
 
 Yanyi Ding, Yawei Li, Cenfu Wei, Shannon Keenan, Yiming Li, Jiwoon Park, Wenjing Yang, Libeth Rosas, Frida Chavez, Isabella Peshek, Stephen B. Hanauer, Emanuelle Bellaguarda, Laura Yun, Christine Boumtri, Vitaliy Poylin, Randy Longman, Alexandra Livanos, Saurabh Mehandru, Ronen Sumagin, Yingzi Cong, Prajan Divakar, Michael Patrick, Liang Zhang, Kimberly Young, Ashley Heck, Mithra Korukonda, Daniel McGuire, Joseph Beechem, Christopher Mason, Mark T. Osterman, Melody Morris, Yuan Luo\*, Parambir S. Dulai\*
 
 ![Overview](thumbnail.png)
 
-This repository contains the analysis code used to construct and analyze an integrated single-cell RNA-seq, CITE-seq, and spatial transcriptomic/multi-omic atlas of ulcerative colitis (UC) and Crohn's disease (CD), including a graph neural network (GCN)-based imputation framework for lower-plex spatial transcriptomics panels.
+## The study
 
-## Overview
+We integrated public and new single-cell RNA-seq data into atlases of ulcerative colitis (UC) and Crohn's disease (CD), and profiled UC and CD tissue with CosMx spatial transcriptomics (1K, 6K and whole-transcriptome panels) and CosMx spatial proteomics.
 
-- Integration and annotation of public and newly generated scRNA-seq/CITE-seq datasets for UC and CD
-- Cell-cell interaction, pseudotime trajectory, and ligand-receptor prioritization analyses
-- CosMx spatial transcriptomics (1K, 6K, WTX) and spatial multi-omics (RNA + protein) processing and annotation
-- Graph neural network-based gene expression imputation for lower-plex spatial panels, benchmarked against Tangram, gimVI, stPlus, SPRITE, and CellPLM
-- Spatial cell-cell interaction, co-occurrence, and neighborhood enrichment analyses
-
-## Repository Structure
-
-```
-MultiOmicsGutAtlas/
-├── uc_scrna/               # UC single-cell RNA-seq analysis
-├── cd_scrna/               # CD single-cell RNA-seq analysis
-├── cosmx_uc/               # UC CosMx spatial transcriptomics
-├── cosmx_cd/               # CD CosMx spatial transcriptomics
-├── cosmx_multiomics/       # Multiomics (RNA + protein) spatial integration
-├── treatment_validation/   # SAHA and TAURUS treatment cohort validation
-├── imputation_benchmark/   # Benchmarking spatial gene imputation methods
-├── imputation_model/       # GCN-based gene imputation model (CosMxGAE)
-└── cite-tcr/               # CITE-seq and TCR clonotype analysis
-```
-
-### `uc_scrna/` — UC Single-Cell Atlas
-Integration and annotation of UC single-cell RNA-seq data across multiple patients.
-
-| Script | Description |
-|--------|-------------|
-| `00` | Dataset preparation |
-| `01` | Atlas integration |
-| `02–04` | Myeloid, fibroblast, and other lineage subclustering |
-| `05` | Atlas assembly |
-| `06–07` | Integration QC and UMAPs |
-| `08–09` | Cell type abundance (Kruskal-Wallis, scCODA) |
-| `10` | GSEA |
-| `11` | Macrophage potency (CytoTRACE2) and pseudotime |
-| `12` | Cell-cell interaction (CellChat) |
-| `13` | Ligand-receptor inference (NicheNet) |
-| `14` | Fibroblast pseudotime |
-
-### `cd_scrna/` — CD Single-Cell Atlas
-Parallel pipeline for CD single-cell RNA-seq, including T cell and epithelial subclustering.
-
-| Script | Description |
-|--------|-------------|
-| `00–07` | Dataset preparation, integration, subclustering (myeloid, fibroblast, T cell, other, epithelial), atlas assembly |
-| `08` | NicheNet Treg analysis |
-| `09–10` | Atlas cleaning and UMAPs |
-| `11` | scCODA compositional analysis |
-| `12` | Treg pseudotime |
-
-### `cosmx_uc/` — UC CosMx Spatial Transcriptomics
-Processing, annotation, and spatial analysis of UC CosMx data across whole-transcriptome (WTX), 6K, and 1K panels.
-
-| Script | Description |
-|--------|-------------|
-| `01` | WTX panel processing |
-| `02` | 6K panel processing |
-| `03` | 1K panel QC, normalization, annotation, and imputation comparison |
-| `04` | AUCell cell type annotation (R) |
-| `05` | Spatial plots, protein annotation, co-occurrence |
-| `06` | CellChat CCI and distance sensitivity analysis (R) |
-| `07` | Validation 1K processing |
-| `08` | Fibroblast–macrophage colocalization (spatial mixed model) |
-| `09` | OGN+RSPO3 fibroblast–macrophage spatial analysis (NicheNet + TNC) |
-| `10` | Cross-disease fibroblast neighborhood comparison (UC vs CD) |
-
-### `cosmx_cd/` — CD CosMx Spatial Transcriptomics
-Spatial analysis of CD biopsies and resection samples.
-
-| Script | Description |
-|--------|-------------|
-| `01` | Biopsy AUCell annotation (R) |
-| `02` | Biopsy LIANA + NMF analysis |
-| `03` | Resection sample processing (12 samples) |
-| `04` | Resection AUCell annotation (R) |
-| `05` | Per-FOV LIANA ligand-receptor inference |
-| `06` | LR module analysis and LOWESS scatter |
-| `07` | Treg proximity analysis (early vs late disease) |
-| `08` | Treg label transfer — biopsy and resection (R) |
-
-### `cosmx_multiomics/` — Multiomics Spatial Integration
-Integration of RNA and protein data from CosMx multiomics panels in UC and CD.
-
-| Script | Description |
-|--------|-------------|
-| `01` | UC multiomics AUCell annotation (R) |
-| `02` | CD multiomics AUCell annotation (R) |
-| `03` | Spatial RNA + protein integration and visualization |
-
-### `treatment_validation/` — Treatment Cohort Validation
-Spatial and single-cell validation of therapeutic interventions.
-
-| Script | Description |
-|--------|-------------|
-| `01` | SAHA CosMx annotation (AUCell + Treg label transfer, R) |
-| `02` | SAHA spatial analysis: Treg bins and fibroblast neighborhoods, pre/post-treatment |
-| `03` | TAURUS CD scRNA annotation (AUCell + Treg label transfer, R) |
-| `04` | TAURUS anti-TNF scRNA: Treg pseudotime delta pre/post-treatment |
-
-### `imputation_benchmark/` — Gene Imputation Benchmarking
-Evaluation of six spatial gene imputation methods on held-out CosMx WTX data using a pseudo-6K panel design.
-
-**Methods benchmarked**: GCN (CosMxGAE), Tangram, gimVI, stPlus, SPRITE, CellPLM
-
-**Metrics**: Cell-type classification (Hamming loss, Micro F1), clustering quality (Silhouette, Calinski-Harabasz, Davies-Bouldin), per-gene correlation (Pearson, Spearman)
-
-| Script | Description |
-|--------|-------------|
-| `00–01` | GCN pseudo-6K post-processing |
-| `02–06` | Per-method imputation (Tangram, gimVI, stPlus, SPRITE, CellPLM) |
-| `07` | Benchmark comparison across all methods |
-
-### `imputation_model/` — CosMxGAE Gene Imputation Model
-A graph autoencoder (GAE) model for imputing gene expression from limited CosMx panels using a whole-transcriptome reference. The model uses mutual nearest neighbor (MNN) graphs to bridge reference (WTX) and query (panel) cells and trains to predict held-out gene expression via weighted MSE loss.
-
-- `Tutorial.ipynb` — end-to-end usage example
-- `Imputation_model/` — model source code (`GAE.py`, `adj.py`, `normalization.py`, `utils.py`)
-
-### `cite-tcr/` — CITE-seq and TCR Analysis
-Protein-level and clonotype analysis using CITE-seq and paired TCR sequencing.
-
-| Script | Description |
-|--------|-------------|
-| `01` | CITE-seq annotation (R) |
-| `02` | Macrophage CITE-seq analysis |
-| `03` | Treg CITE-seq and TCR clonotype analysis |
-
----
-
-## Requirements
-
-**R (≥4.x):** Seurat (v5.1.0), CellChat (v2.2.0), NicheNet (v2.2.1), AUCell (v1.30.1), CytoTRACE2 (v1.1.0)
-
-**Python (≥3.9):** Scanpy (v1.10.2), Squidpy (v1.6.2), decoupler (v2.1.1), Palantir (v1.4.2), LIANA (v1.6.1), pertpy (v0.10.0), scvi-tools (v1.2.0)
-
----
+- **UC.** With inflammation, macrophages shift from SELENOP⁺ resident to monocyte-derived states, alongside fibroblast activation from ADAMDEC1⁺ through OGN⁺RSPO3⁺ to activated states. In tissue, SELENOP⁺MMP9⁺SPP1⁺ macrophages co-localise with activated and TNC-high OGN⁺RSPO3⁺ fibroblasts. A graph-based model imputes genes missing from lower-plex CosMx panels.
+- **CD.** Tregs lose suppressive programs along a pseudotime trajectory. A Treg Suppression Score derived from this trajectory is high in antigen-presenting niches and near dendritic cells, and lower close to OGN⁺RSPO3⁺ fibroblast stroma, where CXCL12 is high.
+- **Anti-TNF.** In the public TAURUS cohort, non-remission after anti-TNF is associated with persistent macrophage-derived signals of the low-suppression niche (OSM, IL1B, IL6).
+- **Spatial proteomics.** Protein imaging separates inflammatory myeloid cells in UC from antigen-presenting myeloid cells and activated Tregs in CD.
 
 ## Data
 
-Newly generated sequencing and spatial data are deposited in the Gene Expression Omnibus (GEO):
+| Data | Access |
+|---|---|
+| Integrated UC and CD scRNA-seq atlases | Built from public studies (Supplementary Tables 1, 2 and 8); processed objects will be shared through the figure repository: [link pending] |
+| CosMx WTX, 6K and spatial proteomics (UC, CD) | [GSE339024](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE339024); the additional UC CosMx 6K samples will be added there |
+| CosMx 1K cohort (UC and CD) | [GSE312415](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE312415) |
+| CITE-seq with TCR-seq | [GSE311585](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE311585) |
+| TAURUS anti-TNF scRNA-seq | Thomas et al. (2024); access as described there |
 
-- CITE-seq/TCR-seq: [GSE311585](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE311585)
-- CosMx UC and CD 1K cohort: [GSE312415](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE312415)
-- CosMx WTX/6K/resection/multi-omics data: [GSE339024](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE339024)
-  
-Public datasets used for atlas integration are cited in the manuscript's Supplementary Tables 1 and 8.
+## Repository layout
 
----
+Each folder has its own README with one line per file (analysis, inputs, outputs, panels) and the run order.
+
+```
+uc_scrna/              UC scRNA-seq atlas: integration, annotation, macrophage and fibroblast analyses (Fig 2, Fig 3D/G)
+cd_scrna/              CD scRNA-seq atlas and Treg pseudotime, pathways and ligand-receptor prioritization (Fig 4)
+cosmx_uc/              UC CosMx 1K / 6K / WTX: processing, annotation, macrophage-fibroblast spatial analyses (Fig 3)
+cosmx_cd/              CD CosMx: Treg label transfer, Treg Suppression Score, neighbourhoods, APCs, CXCL12-High Regions (Fig 5)
+treatment_validation/  TAURUS anti-TNF scRNA-seq: Treg programs and cytokine sources (Fig 6)
+cosmx_multiomics/      CosMx spatial proteomics, UC vs CD (Fig 7)
+cite-tcr/              CITE-seq protein of macrophages; TCR repertoire of Tregs
+imputation_model/      GCN gene-imputation model for lower-plex CosMx panels (with tutorial)
+imputation_benchmark/  Benchmark of the GCN against Tangram, gimVI, stPlus, SPRITE and CellPLM
+```
+
+Files are numbered in run order within each folder. The longer analysis scripts are split into named sections, one per analysis step, so a single step can be run on its own:
+
+```
+python <file>.py                          # all sections in order
+RUN_SECTIONS=<id>,<id> python <file>.py   # selected sections only
+RUN_SECTIONS=<id> Rscript <file>.R
+```
+
+Paths are the lab's absolute paths for now and will be replaced by placeholders before public release.
+
+## Environment
+
+- **R 4.5:** Seurat (v5.1.0 for the atlases, v5.5.0 for the Treg, spatial and TAURUS scripts), CellChat (v2.2.0), nichenetr (v2.2.1), AUCell (v1.30.1), clusterProfiler (v4.16.0), lme4 (v2.0.1), lmerTest (v3.2.1), circlize (v0.4.16), UpSetR (v1.4.0), ragg (v1.5.2).
+- **Python 3.10:** Scanpy (v1.10.2), anndata (v0.11.0), Squidpy (v1.6.2), decoupler (v2.1.1), Palantir (v1.4.2), LIANA (v1.6.1), harmonypy (v0.0.10), statsmodels (v0.14.5), PyDESeq2 (v0.5.2), scikit-learn (v1.5.1), pyarrow (v16.1.0), scvi-tools (v1.2.0).
+- **scCODA** (`uc_scrna/09`, section `S3D_sccoda`): separate Python 3.12 environment with pertpy (v1.0.2).
+- **OpenBLAS on Intel Sapphire Rapids (Xeon 8468):** OpenBLAS 0.3.20 can return wrong float64 matrix products on these CPUs. Set `OPENBLAS_CORETYPE=SkylakeX` before running Python there.
+- **Threads:** the mixed-model sections in `cosmx_cd/` and `treatment_validation/` were run with `OPENBLAS_NUM_THREADS=32` (`cd_scrna/12` and `cd_scrna/13` with 16). Use the same value for bit-identical output.
+
+## Figure and table map
+
+The tables list the code behind each panel and supplementary table. "Not in repo" marks an upstream step whose code is not included; the folder READMEs give details.
+
+| Figure | Panels → code |
+|---|---|
+| Fig 1 | Study design (no code) |
+| Fig 2 | A-C `uc_scrna/02-08`; D `uc_scrna/03`; E `uc_scrna/09` (section `F2E_macrophage_subtype_composition`); F `uc_scrna/10` (gene-symbol harmonisation of its input: not in repo); G `uc_scrna/11`; H-J `uc_scrna/12` (per-sample ADAMDEC1⁺ fraction table: not in repo) |
+| Fig 3 | A `cosmx_uc/07` (1K Seurat objects: not in repo); B-C `cosmx_uc/01`, `05`, `06`; D `uc_scrna/14`, `cosmx_uc/11`; E `cosmx_uc/09-11`; F `cosmx_uc/12`; G `uc_scrna/14-15`; H `cosmx_uc/09`, `13-14`; I-J `cosmx_uc/11` |
+| Fig 4 | A-B `cd_scrna/01-10`; C `cd_scrna/11`; D-F `cd_scrna/12`; G `cd_scrna/14`; H-I `cd_scrna/15-16` |
+| Fig 5 | A `cosmx_cd/14` (WTX biopsies `cosmx_cd/01-02`); B `cosmx_cd/11-12`, `14`; C `cosmx_cd/12-13`; D `cosmx_cd/15`; E-F `cosmx_cd/16`; score and inputs `cosmx_cd/03-10`, `cd_scrna/16` (resection cell metadata table: not in repo) |
+| Fig 6 | A `treatment_validation/03`; B `treatment_validation/04`; data preparation `treatment_validation/01-02` |
+| Fig 7 | A-E `cosmx_multiomics/05`; UC and CD objects `cosmx_multiomics/01-04` |
+| Supp 1 | `uc_scrna/02-08` |
+| Supp 2 | `uc_scrna/03`, `08` |
+| Supp 3 | A `uc_scrna/04` (section 4); B-C `uc_scrna/01`, `06`; D `uc_scrna/09` |
+| Supp 4 | A-B `cite-tcr/01-02`; C-D `uc_scrna/13` |
+| Supp 5 | A-B `uc_scrna/13`; C `uc_scrna/16` |
+| Supp 6 | A-C `cosmx_uc/03`; D `cosmx_uc/02`, `05`, `06`; E `cosmx_uc/12`; F `imputation_model/`; G-H `cosmx_uc/03`, `06`; I `cosmx_uc/06`; J `imputation_benchmark/`; K `cosmx_uc/03`; L `cosmx_uc/04`; M `cosmx_uc/08` |
+| Supp 7 | A-E `cd_scrna/01-10`; F `cite-tcr/01`, `03`; G `cd_scrna/11` |
+| Supp 8 | A-E `cd_scrna/13`; F `cd_scrna/14`; G-H `cd_scrna/16`; I `cite-tcr/04-05`, `cosmx_cd/08-09` |
+| Supp 9 | A-B `cosmx_cd/12-13`; C `cosmx_cd/17`; D `cosmx_cd/15`; E-F `cosmx_cd/16` |
+| Supp 10 | `treatment_validation/05` |
+
+| Supplementary table | Code |
+|---|---|
+| 1 Datasets by modality; 2 UC atlas by study; 5 CosMx sample metadata; 6 custom probes; 8 CD atlas by study; 13 glossary | none (compiled from the study metadata) |
+| 3 Lineage-wise silhouette scores | `uc_scrna/07-08` |
+| 4 SELENOP⁺ vs SELENOP⁻ GSEA | `uc_scrna/10` |
+| 7 GCN imputation benchmark | `imputation_benchmark/07` |
+| 9 TCR repertoire | `cite-tcr/05` |
+| 10 Gene sets, signatures and LR modules | `cosmx_cd/10` (score genes), `cosmx_cd/13` (LR modules), `cd_scrna/14` (pathway gene sets) |
+| 11 TAURUS biopsy-level models | `treatment_validation/03-04` |
+| 12 Spatial proteomics panel and marker use | `cosmx_multiomics/05` (gates and markers; the whole-panel marker screen is not in repo) |
+
+### Run order across folders
+
+`uc_scrna` and `cd_scrna` atlases first. `uc_scrna/14` feeds `cosmx_uc/10`. In `cd_scrna`, `12 → 13, 14, 15 → 16`; `cd_scrna/12` and `16` (section `immune_sender_ranking`) feed `cosmx_cd/08-10`; `cosmx_cd/09` feeds `cite-tcr/05`; `cd_scrna/12`, `14` and `cosmx_cd/10` feed `treatment_validation/03`. `imputation_model/` runs before the imputed-1K steps of `cosmx_uc/`.
 
 ## Citation
 
-> Pending upon doi assingment
-
----
-
+Pending DOI assignment.
 
 ## Contact
 
-Questions can be directed to the corresponding authors:
 Yuan Luo (yuan.luo@northwestern.edu) and Parambir S. Dulai (parambir.dulai@northwestern.edu).

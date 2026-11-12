@@ -91,8 +91,8 @@ The notebook walks through the full pipeline:
 ### Expected Output
 
 Two CSV files saved to `save_PATH`:
-- `Gene_imputation_best_log1p.csv` — imputed expression at best validation epoch (log1p-normalized)
-- `Gene_imputation_final_log1p.csv` — imputed expression at final epoch (log1p-normalized)
+- `Gene_imputation_best_log1p.csv`: imputed expression at best validation epoch (log1p-normalized)
+- `Gene_imputation_final_log1p.csv`: imputed expression at final epoch (log1p-normalized)
 
 Rows = query cells, columns = imputed genes (genes present in reference but not in query panel).
 
