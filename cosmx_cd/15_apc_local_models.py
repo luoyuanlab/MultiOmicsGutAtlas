@@ -2,11 +2,11 @@
 """CD CosMx 6K resections: Treg Suppression Score vs local cell types, with APC and DC models (11 sections, 4 patients, 6,554 strict Tregs).
 
 Panels   Fig 5D joint APC-type model (left) and DC effect by within-section tertile of local OGN+RSPO3+ fibroblasts (right);
-         Supp 9D score per SD of each cell type's local fraction; Results numbers (cd_spatial_results_all.csv, cd_interaction_selenop_tests.csv)
+         Supp 9C score per SD of each cell type's local fraction; Results numbers (cd_spatial_results_all.csv, cd_interaction_selenop_tests.csv)
 Inputs   combined/all_samples.parquet, combined/raw_counts_strict_tregs.csv; ligand_receptor_state/treg_local_*.csv.gz (11);
          A_fig4_panels/fig4_cn_treg_state_forest.csv (12)
-Outputs  updated_figures/ (cd_spatial_results_all.csv, cd_interaction_selenop_tests.csv); Fig4A-F_treg_suppression_niches/ (Fig 5D panel,
-         fig4d_dc_by_ogn_tertile_checks.csv, fig4d_dc_slope_by_ogn_tertile_per_section.csv); SuppFig9A-F_niche_cxcl12_apc/ (Supp 9D panel)
+Outputs  updated_figures/ (cd_spatial_results_all.csv, cd_interaction_selenop_tests.csv); Fig5A-F_treg_suppression_niches/ (Fig 5D panel,
+         fig4d_dc_by_ogn_tertile_checks.csv, fig4d_dc_slope_by_ogn_tertile_per_section.csv); SuppFig10A-E_niche_cxcl12_apc/ (Supp 9C panel)
 Sections spatial_results_table -> interaction_tests -> F5D_dc_by_ogn_tertile -> F5D_apc_types_dc_ogn -> S9D_celltype_forest
 Run      python <file>, or RUN_SECTIONS=<id>[,<id>] python <file>
 Models   act_z = Treg Suppression Score (z within section); x_z = local fraction among all cells within 50 um, z within section;
@@ -33,7 +33,7 @@ def _run(section):
 
 D = '/share/fsmresfiles/UC/revision_jenny/cd_treg_rebuild_rowfix'; P4 = f'{D}/panels/fig4_and_related'
 LR = f'{P4}/B_resection_analyses/ligand_receptor_state'; R = '/share/fsmresfiles/UC/AtoMx/CD_surgical_resection'
-UPD = '/share/fsmresfiles/UC/revision_jenny/updated_figures'; FIG = '/share/fsmresfiles/UC/revision_jenny/Fig4A-F_treg_suppression_niches'
+UPD = '/share/fsmresfiles/UC/revision_jenny/updated_figures'; FIG = '/share/fsmresfiles/UC/revision_jenny/Fig5A-F_treg_suppression_niches'
 UM, RAD = 0.12028, 50
 SUB = ['SELENOP+MMP9+PLA2G2D+ Mac', 'SELENOP+MMP9+SPP1+ Mac', 'SELENOP+SIGLEC1+ Mac', 'SELENOP+XIST- Mac']   # the 4 SELENOP+ Mac labels
 # APC types of Fig 5D: key -> (source table, label(s), display name)
@@ -495,7 +495,7 @@ if _run('F5D_apc_types_dc_ogn'):
                  xytext=(0, 3), textcoords='offset points', ha='right', va='bottom', fontsize=FSm, color='black', linespacing=1.05)
     axr.text(0.02, 0.995, 'Thin lines: sections\n(one color each)\nBold: pooled ± 95% CI', transform=axr.transAxes, ha='left', va='top',
              fontsize=FKEY, color=DARK, linespacing=1.05, zorder=4)
-    with open(f'{FIG}/fig4_apc_types_dc_ogn_combined.png', 'wb') as fh: fig.savefig(fh, format='png', dpi=300, bbox_inches='tight', pad_inches=0.05)
+    with open(f'{FIG}/Fig5D_apc_types_dc_ogn_tertiles.png', 'wb') as fh: fig.savefig(fh, format='png', dpi=300, bbox_inches='tight', pad_inches=0.05)
     plt.close(fig)
 
 
@@ -504,7 +504,7 @@ if _run('F5D_apc_types_dc_ogn'):
 # 'Absoprtive Epi' (annotation spelling) = BEST4+ cells; filled = q < 0.05, clustered P < 0.05 and >= 9/11 sections same sign; DC row in red
 # ======================================================================================================================
 if _run('S9D_celltype_forest'):
-    PNG = '/share/fsmresfiles/UC/revision_jenny/SuppFig9A-F_niche_cxcl12_apc/supp_all_celltypes_treg_score_forest.png'
+    PNG = '/share/fsmresfiles/UC/revision_jenny/SuppFig10A-E_niche_cxcl12_apc/SuppFig10C_all_celltypes_treg_score_forest.png'
     DISP = {'OGN+RSPO3+ Fib': 'OGN⁺RSPO3⁺ Fib', 'ADAMDEC1+ Fib': 'ADAMDEC1⁺ Fib', 'PLA2G2A+ ECM Fib': 'PLA2G2A⁺ ECM Fib',
             'CD9+ M2 Mac': 'CD9⁺ M2 Mac', 'Absoprtive Epi': 'BEST4⁺ Epi', 'Gd T': 'γδ T', 'SELENOP+ Mac': 'SELENOP⁺ Mac'}
     T = pd.read_csv(f'{UPD}/cd_spatial_results_all.csv')

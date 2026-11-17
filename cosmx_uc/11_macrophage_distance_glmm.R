@@ -1,6 +1,6 @@
 # UC CosMx 6K: mixed-effects logistic regression of SPP1, MMP9 and receptor detection in SELENOP+ macrophages on distance
 # to the nearest (ligand-expressing) OGN+RSPO3+ fibroblast (Fig 3H; plotted by 12).
-# Input:  Fig2H_cosmx_fib_mac_distance/intermediate/ligand_sender_cells.csv.gz (07)
+# Input:  Fig3H_cosmx_fib_mac_distance/intermediate/ligand_sender_cells.csv.gz (07)
 # Output: intermediate/glmm_final.csv (read by 12)
 # Run:    Rscript <file>, or RUN_SECTIONS=<id>[,<id>] Rscript <file>
 .RUN_SECTIONS <- Filter(nzchar, trimws(strsplit(Sys.getenv("RUN_SECTIONS", ""), ",")[[1]]))
@@ -23,7 +23,7 @@ if (.run("F3H_distance_glmm")) {
 #   INT: y ~ x * condition + o + lt + (1 + x || patient) + (1 | patient:sample)  (all 11; x:condition = UC vs healthy difference)
 # BH-FDR within family (SMS markers; each ligand's displayed outcomes) per model. Output intermediate/glmm_final.csv
 suppressPackageStartupMessages(library(lme4))
-O <- '/share/fsmresfiles/UC/revision_jenny/Fig2H_cosmx_fib_mac_distance'
+O <- '/share/fsmresfiles/UC/revision_jenny/Fig3H_cosmx_fib_mac_distance'
 D <- read.csv(gzfile(file.path(O,'intermediate/ligand_sender_cells.csv.gz'))); D$lt <- as.numeric(scale(D$log_total))
 D$condition <- factor(D$condition, levels=c('Control','UC'))
 FAM <- list('SMS markers'=list(x='dub_ogn', o='dub_otherfib', y=c('SPP1','MMP9')),

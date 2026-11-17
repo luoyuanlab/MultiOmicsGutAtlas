@@ -3,8 +3,8 @@
 
 Panels: Supp 10 (per-ligand sender contributions to the Remission - Non-remission difference in change).
 Inputs: TAURUS raw_norm_counts_anno.h5ad.gz; cell cache of 04 (Fig6_treg_antitnf_taurus/supplementary/cache/cn10_cytokine_cells.parquet).
-Outputs (SuppFig10_treg_activation_ligand_senders/): cache/treg_activation_ligand_cells.parquet, treg_activation_ligand_sources.csv,
-  SuppFig10_treg_activation_ligand_senders.png.
+Outputs (SuppFig11_treg_ligand_senders_spatial_lr/): cache/treg_activation_ligand_cells.parquet, treg_activation_ligand_sources.csv,
+  SuppFig11A_treg_activation_ligand_senders.png.
 Sections (run order, after 04): S10_ligand_sources -> S10_ligand_senders.
 Run: RUN_SECTIONS=<id>[,<id>...] python <file> runs selected sections only (file order).
 """
@@ -35,9 +35,9 @@ def _run(section):
 
 
 T = '/share/fsmresfiles/UC/NatureImmunology_TAURUS_forJenny'; R = '/share/fsmresfiles/UC/revision_jenny'
-F6S = f'{R}/Fig6_treg_antitnf_taurus/supplementary'; HERE = f'{R}/SuppFig10_treg_activation_ligand_senders'
+F6S = f'{R}/Fig6_treg_antitnf_taurus/supplementary'; HERE = f'{R}/SuppFig11_treg_ligand_senders_spatial_lr'
 CACHE = f'{F6S}/cache/cn10_cytokine_cells.parquet'; CACHE2 = f'{HERE}/cache/treg_activation_ligand_cells.parquet'
-CSV = f'{HERE}/treg_activation_ligand_sources.csv'; PNG = f'{HERE}/SuppFig10_treg_activation_ligand_senders.png'
+CSV = f'{HERE}/treg_activation_ligand_sources.csv'; PNG = f'{HERE}/SuppFig11A_treg_activation_ligand_senders.png'
 t0 = time.time(); log = lambda *a: print(f'[{time.time() - t0:5.0f}s]', *a, flush=True)
 
 
@@ -280,6 +280,7 @@ write.csv(do.call(rbind, out), a[2], row.names = FALSE)
 # ======================================================================================================================
 # Section S10_ligand_senders: Supp 10 dot plot (plot only). Rows = 13 ligands of the four Fig 6A programs; columns = sender groups;
 # size = % of pre-treatment transcripts; colour = group contribution to the difference in change; right strip = all-cell P
+# (Rem P / Non-rem P prefixed with up/down arrows = sign of the all-cell change estimate, post - pre)
 # ======================================================================================================================
 if _run('S10_ligand_senders'):
     import matplotlib
@@ -334,6 +335,8 @@ if _run('S10_ligand_senders'):
     VAL = 100 * (cR.div(preR, axis=0) - cN.div(preN, axis=0))   # contribution to the difference in change, % of pre-treatment all-cell mean
     A = d[d.part == '2 all-cell model'].pivot_table(index='feature', columns='contrast', values='p').reindex(GENES)
     PC = {'rem': 'Change in remission (post − pre)', 'non': 'Change in non-remission (post − pre)', 'diff': 'Differential change (remission − non-remission)'}
+    EST = d[d.part == '2 all-cell model'].pivot_table(index='feature', columns='contrast', values='estimate').reindex(GENES)   # direction of change
+    ARW = lambda k, g: ('↑ ' if EST.loc[g, PC[k]] > 0 else '↓ ') if k in ('rem', 'non') else ''
 
     # row order: sender column with the largest |contribution to the difference|, then difference P
     TOPC = VAL[PCOLS].abs().idxmax(axis=1)
@@ -383,14 +386,14 @@ if _run('S10_ligand_senders'):
     PT = DPI / 72 / axw                                            # 1 pt in axes fraction
     XR = -(wr / axw + 6 * PT); XL = XR - 5 * PT
     for g in GENES: LIG[g].set_x(XL); LIG[g].set_ha('right'); RCP[g].set_x(XR)
-    # P strip: change P in remission, in non-remission and difference P (bold if P < 0.05)
+    # P strip: change P in remission, in non-remission (with direction arrow) and difference P (bold if P < 0.05)
     axS.axis('off')
     STRIP = [('rem', 'Rem P', BLUE), ('non', 'Non-rem P', RED), ('diff', 'Diff P', K)]
     PV, PVC = [], []
     for j, (k, hd, cc_) in enumerate(STRIP):
         for g in GENES:
             p = A.loc[g, PC[k]]
-            PV.append(axS.text(0, ypos[g], fmtv(p), ha='center', va='center', fontsize=FS_P, color=cc_, fontweight='bold' if p < 0.05 else 'normal')); PVC.append(j)
+            PV.append(axS.text(0, ypos[g], ARW(k, g) + fmtv(p), ha='center', va='center', fontsize=FS_P, color=cc_, fontweight='bold' if p < 0.05 else 'normal')); PVC.append(j)
     fig.canvas.draw()
     PW = [max(PV[i].get_window_extent(rend).width for i in range(len(PV)) if PVC[i] == j) / DPI for j in range(3)]   # widest value per column (in)
     CX = [0.06 + PW[0] / 2]; [CX.append(CX[-1] + PW[j - 1] / 2 + PGAP + PW[j] / 2) for j in (1, 2)]
@@ -429,6 +432,8 @@ if _run('S10_ligand_senders'):
     xP = fig.transFigure.inverted().transform((axS.transData.transform((SW / 2, 0))[0], 0))[0]
     fig.text(xT, yT, 'Sender cell group', ha='center', va='bottom', fontsize=FS_AT)
     fig.text(xP, yT, 'P (biopsy-level mixed model)', ha='center', va='bottom', fontsize=FS_AT)
+    xK = fig.transFigure.inverted().transform((axS.transData.transform((0, 0))[0], 0))[0]   # arrow key under the P strip
+    fig.text(xK, (BOTA - 0.08) / HIN, '↑/↓, increase/decrease after treatment', ha='left', va='top', fontsize=FS_LEG, color=K)
     fig.canvas.draw()
     fig.savefig(PNG, dpi=DPI, bbox_inches='tight', pad_inches=0.08, facecolor='white')
     log('wrote', PNG)

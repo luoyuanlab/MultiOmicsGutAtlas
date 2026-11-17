@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 """CD CosMx 6K resections: ligand-receptor (LR) signalling per cellular neighbourhood (CN).
 
-Panels: Fig 5C (F5C_score_signalling), Supp 9A (S9A_cn_characterisation), Supp 9B (S9B_cn_signalling); Supp Table 10 (LR module membership).
+Panels: Fig 5C (F5C_score_signalling), Supp 10A (S9A_cn_characterisation); Supplementary Table 10b (S9B_cn_signalling, CSV only); Supp Table 10 (LR module membership).
+Section ids keep earlier panel letters.
 Also writes the Treg receiver pair table and per-Treg module scores read by 17_neighbourhood_apc_mhcii.py.
 Inputs: combined/spot_lr_df.parquet (07), all_samples.parquet, raw_counts_strict_tregs.csv (05), per-section norm_log1p.h5ad (03), CellChatDB snapshot,
   NicheNet network, and the Treg score (10), CN tables (11) and CN composition / CN forest tables (12).
@@ -12,9 +13,6 @@ import numpy as np, pandas as pd, pyarrow.parquet as pq, matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt, matplotlib.ticker, seaborn as sns
 from matplotlib.patches import Rectangle
-from matplotlib.lines import Line2D
-from matplotlib.font_manager import FontProperties
-from matplotlib.textpath import TextPath
 from matplotlib.transforms import blended_transform_factory, ScaledTranslation
 from seaborn.utils import relative_luminance
 from scipy import sparse, stats as sst
@@ -38,7 +36,7 @@ R = '/share/fsmresfiles/UC/AtoMx/CD_surgical_resection'; SPOT = f'{R}/combined/s
 CND = f'{P4}/B_resection_analyses/cellular_neighborhoods_v2'; CCDB = f'{D}/objects/cellchatdb_human_interactions_snapshot.csv'
 C45 = f'{P4}/A_fig4_panels/fig4_cn_composition_heatmap.csv'; C26 = f'{P4}/A_fig4_panels/fig4_cn_treg_state_forest.csv'   # from 12_neighbourhood_treg_score.py
 OUTA = f'{P4}/A_fig4_panels'; LRC = f'{P4}/B_resection_analyses/lr_modules_cellchat'; INF = f'{P4}/B_resection_analyses/inflammatory_axes'
-FIG5 = '/share/fsmresfiles/UC/revision_jenny/Fig4A-F_treg_suppression_niches'; SUPP9 = '/share/fsmresfiles/UC/revision_jenny/SuppFig9A-F_niche_cxcl12_apc'
+FIG5 = '/share/fsmresfiles/UC/revision_jenny/Fig5A-F_treg_suppression_niches'; SUPP9 = '/share/fsmresfiles/UC/revision_jenny/SuppFig10A-E_niche_cxcl12_apc'
 # files passed between sections
 MEMB82 = f'{LRC}/lr_modules_allcells_membership.csv'; CELL82 = f'{LRC}/lr_modules_allcells_per_cell.parquet'
 MEMB84 = f'{LRC}/lr_modules_v2_membership.csv'; PAIR84 = f'{LRC}/lr_pairs_v2_per_section_cn.csv'; DET84 = f'{LRC}/lr_pairs_v2_detection.csv'
@@ -426,7 +424,7 @@ if _run('cn_inflammatory_axes'):
 # Section S9A_cn_characterisation: CN cell-type composition, LR modules and inflammatory axes (Supp 9A)
 # ======================================================================================================================
 if _run('S9A_cn_characterisation'):
-    STEM = f'{SUPP9}/supp_cn_niche_characterisation'
+    STEM = f'{SUPP9}/supp_cn_niche_characterisation'; PNG = f'{SUPP9}/SuppFig10A_cn_niche_characterisation.png'   # CSV keeps the STEM name
     MINUS = lambda t: t.replace('-', '−')
     # composition (12_neighbourhood_treg_score.py)
     E = pd.read_csv(C45, index_col=0)
@@ -485,7 +483,7 @@ if _run('S9A_cn_characterisation'):
         cb = fig.colorbar(src_ax.collections[0], ax=par, shrink=0.85, aspect=15)
         cb.set_label(lab_, fontsize=FS_CB); cb.ax.tick_params(labelsize=FS_CB); cb.outline.set_visible(False)
     cb.ax.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(1.0 if VM > 1.5 else 0.5)); cb.ax.yaxis.set_major_formatter(umf())
-    fig.savefig(f'{STEM}.png', dpi=300, bbox_inches='tight', pad_inches=0.05); plt.close(fig)
+    fig.savefig(PNG, dpi=300, bbox_inches='tight', pad_inches=0.05); plt.close(fig)
     # source data: every plotted cell
     rows = []
     for c, lab in zip(CNS, LAB):
@@ -523,7 +521,7 @@ def niche_signalling_table():
 # Section F5C_score_signalling: Treg Suppression Score per CN (forest, from 12) beside the niche signalling heatmap (Fig 5C; colours saturate at +/-1.2)
 # ======================================================================================================================
 if _run('F5C_score_signalling'):
-    STEM = f'{FIG5}/fig4_cn_treg_score_and_signaling_vm12_wide'; VM = 1.2
+    STEM = f'{FIG5}/fig4_cn_treg_score_and_signaling_vm12_wide'; VM = 1.2; PNG = f'{FIG5}/Fig5C_cn_treg_score_and_signaling.png'   # CSV keeps the STEM name
     EMPH_CN = (4, 5, 10)   # CN4, CN5 and CN10 row labels in bold
     X, LAB = niche_signalling_table()
     V = X.pivot(index='CN', columns='column', values='value').loc[CNS, COLS]
@@ -591,7 +589,7 @@ if _run('F5C_score_signalling'):
     for g, cs in GROUPS: header(axh, axh.transData, XL[cs[0]] + 0.04, XL[cs[-1]] + CW - 0.04, [(g, FS_LAB, 9)])
     header(axf, axf.transAxes, 0.014, 0.986, [('In vs Outside Neighborhood', FS_TICK, 9), ('Treg Suppression Score', FS_LAB, 27)])
     fig.suptitle('Treg Suppression Score and Niche Signaling', fontsize=FS_TITLE)
-    fig.savefig(f'{STEM}.png', dpi=300, bbox_inches='tight', pad_inches=0.05); plt.close(fig)
+    fig.savefig(PNG, dpi=300, bbox_inches='tight', pad_inches=0.05); plt.close(fig)
     # source data: forest rows + heatmap cells
     FO = F.reset_index().rename(columns={EST: 'estimate', 'ci_lo': 'ci_low', 'ci_hi': 'ci_high', 'mixed_p': 'p', 'mixed_q': 'q'})
     FO = FO.assign(panel='Treg Suppression Score (forest)', column='Treg Suppression Score, in vs outside neighborhood', CN_label=LAB,
@@ -610,12 +608,10 @@ if _run('F5C_score_signalling'):
 
 
 # ======================================================================================================================
-# Section S9B_cn_signalling: per-niche mixed-model estimate and 95% CI for every column of the niche signalling heatmap (Supp 9B)
+# Section S9B_cn_signalling: per-niche mixed-model estimate and 95% CI for every column of the niche signalling heatmap (CSV = Supplementary Table 10b)
 # ======================================================================================================================
 if _run('S9B_cn_signalling'):
     STEM = f'{SUPP9}/supp_cn_signaling_errorbars'
-    HI = '#b2182b'; GREY = '#6e6e6e'; PTC = '#252525'
-    PANEL_HI = {'Antigen Presentation': 4, 'Co-Stimulatory': 4, 'IL-6': 10, 'IL-1': 10, 'OSM': 10, 'IL-11': 10, 'TNF': 4, 'Matrix–Integrin': 10}   # niche discussed in the text
     LMMC = ['lmm_estimate', 'lmm_ci_low', 'lmm_ci_high', 'lmm_p', 'lmm_q']
     X, LAB = niche_signalling_table()
     SUMR = []
@@ -630,45 +626,6 @@ if _run('S9B_cn_signalling'):
                              heatmap_mean_within_section_z=h.value, estimate_to_heatmap_ratio=ratio, heatmap_cell_text=h.cell_text,
                              source_csv=os.path.basename(C89) + ' = ' + h.source_csv))
     SUMR = pd.DataFrame(SUMR)
-    # layout: 4 x 2 panels, row labels and CN colour key on the left column, stars in one column right of all CIs
-    FS_LAB, FS_TICK, FS_TITLE, FS_GROUP, FS_STAR, FS_KEY = 13, 13, 14, 13, 14, 13
-    style(FS_TICK)
-    MS, MEW, ELW, MS_HI = 7.5, 1.6, 1.9, 9.5
-    FP = FontProperties(family='DejaVu Sans', size=FS_STAR)
-    GLY = {s: TextPath((0, 0), s, size=FS_STAR, prop=FP).get_extents() for s in ['*', '**', '***']}   # glyph extents, to centre the stars on the row
-    XLO = SUMR.lmm_ci_low.min() - 0.15
-    xc = max(SUMR.lmm_ci_high.max(), SUMR.lmm_estimate.max()) + 0.35; XHI = xc + 0.3
-    fig, AXS = plt.subplots(4, 2, figsize=(11, 12.3), sharex=True, layout='constrained')
-    for k, (c, ax) in enumerate(zip(COLS, AXS.ravel())):
-        left = k % 2 == 0
-        ax.set_xlim(XLO, XHI); ax.set_ylim(9.55, -0.55)
-        ax.axvline(0, ls=(0, (4, 3)), color='#555555', lw=1.0, zorder=1)
-        h_ = SUMR[SUMR.column == c].set_index('CN')
-        for i, cn in enumerate(CNS):
-            r = h_.loc[cn]
-            ax.hlines(i, r.lmm_ci_low, r.lmm_ci_high, color=PTC, lw=ELW, zorder=3)
-            hc_ = PTC if PANEL_HI[c] != cn else HI
-            ax.plot(r.lmm_estimate, i, 'o', ms=MS if hc_ == PTC else MS_HI, color=hc_, mfc=hc_ if r.filled_point else 'white', mew=MEW, zorder=4 if hc_ == PTC else 5)
-            if r.stars:
-                gb = GLY[r.stars]
-                ax.annotate(r.stars, xy=(xc, i), xytext=(-(gb.x0 + gb.x1) / 2, -(gb.y0 + gb.y1) / 2), textcoords='offset points',
-                            ha='left', va='baseline', fontsize=FS_STAR, color='k', annotation_clip=False)
-        ax.set_title(c, loc='left', fontsize=FS_TITLE, pad=4)
-        ax.set_title(GOF[c], loc='right', fontsize=FS_GROUP, color=GREY, pad=4)
-        ax.set_yticks(range(10)); ax.tick_params(axis='y', length=0)
-        if left:   # shared row labels; red for the niche highlighted in the row's left panel
-            ax.set_yticklabels(LAB, fontsize=FS_LAB); cn_key(ax, range(10), 0.19)
-            ax.get_yticklabels()[CNS.index(PANEL_HI[c])].set_color(HI)
-        else:
-            ax.set_yticklabels([])
-        ax.set_xticks([-2, -1, 0, 1, 2]); ax.tick_params(axis='x', labelsize=FS_TICK, length=3)
-        ax.spines[['top', 'right', 'left']].set_visible(False)
-    fig.supxlabel('Niche vs Other Niches (Mixed-Model Estimate, z)', fontsize=FS_TITLE)
-    key = [Line2D([], [], marker='o', ls='-', color=PTC, mfc=PTC, ms=MS, mew=MEW, lw=ELW, label='Estimate ± 95% CI, q < 0.05'),
-           Line2D([], [], marker='o', ls='-', color=PTC, mfc='white', ms=MS, mew=MEW, lw=ELW, label='q ≥ 0.05'),
-           Line2D([], [], ls=(0, (4, 3)), color='#555555', lw=1.0, label='0 = No Difference')]
-    fig.legend(handles=key, loc='outside upper right', ncol=4, frameon=False, fontsize=FS_KEY, handletextpad=0.4, columnspacing=1.2, handlelength=1.8)
-    fig.savefig(f'{STEM}.png', dpi=300, bbox_inches='tight', pad_inches=0.05); plt.close(fig)
     OUTC = SUMR.copy(); OUTC['highlighted'] = OUTC.CN == 10
     OUTC = OUTC.assign(metric='per section: mean LIANA bivariate local score over the column\'s pairs and over ALL cells of the niche (>= 100 cells), z across the '
                               '10 niches within the section; PLOTTED: lmm_estimate (niche minus the other niches, within-section z) with its Wald 95% CI',

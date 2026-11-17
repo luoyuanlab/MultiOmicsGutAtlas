@@ -5,10 +5,10 @@ activated-fibroblast co-occurrence and neighbour models, and the NicheNet ligand
 Panels:  Fig 3D (ligand activity), 3E (ligand-regulator correlation), 3I (co-occurrence), 3J (neighbour forest)
 Inputs:  uc_cosmx_colocal_input.h5ad (07), 1K validation object and imputed AUCell labels (02, 03), WTX h5ad (01, 03),
          NicheNet ligand activities (uc_scrna/14), ligand-regulator pair table (08)
-Outputs: Fig2E_I_J_ligand_regulator_cooccurrence_neighbourhood/ (fig2c_bar_combined.png, fig2m_cooccurrence_allsamples.png,
-         fig2n_forest_allsamples.png, supp_table_fig2c_allsamples.csv, supp_table_fig2n_allsamples.csv,
+Outputs: Fig3E_I_J_ligand_regulator_cooccurrence_neighbourhood/ (Fig3E_bar_combined.png, Fig3I_cooccurrence_allsamples.png,
+         Fig3J_forest_allsamples.png, supp_table_fig2c_allsamples.csv, supp_table_fig2n_allsamples.csv,
          intermediate/fig2c_per_piece.csv (read by 10), intermediate/fig2m_allsamples_scores.csv);
-         Fig2D_nichenet_ligand_activity/fig1i_ligand_activity.png
+         Fig3D_nichenet_ligand_activity/Fig3D_ligand_activity.png
 Run:     python <file>, or RUN_SECTIONS=<id>[,<id>] python <file>
 """
 import os as _os
@@ -35,12 +35,12 @@ if _run('F3EIJ_ligand_regulator_cooccurrence'):
     from sklearn.neighbors import NearestNeighbors
     import statsmodels.formula.api as smf
     from statsmodels.stats.multitest import multipletests
-    O='/share/fsmresfiles/UC/revision_jenny/Fig2E_I_J_ligand_regulator_cooccurrence_neighbourhood'; PX=0.12028; NN='/share/fsmresfiles/UC/scRNA-seq/merged_9p_wip'
+    O='/share/fsmresfiles/UC/revision_jenny/Fig3E_I_J_ligand_regulator_cooccurrence_neighbourhood'; PX=0.12028; NN='/share/fsmresfiles/UC/scRNA-seq/merged_9p_wip'
     MAP=pd.read_csv(f'{NN}/cell_type_name_mapper.csv'); CAT=dict(zip(MAP['cell_type_short'],MAP['cell_category']))
     def lognorm(a):
         a=a.copy(); sc.pp.normalize_total(a); sc.pp.log1p(a); return a
     # ---------------- data (inflamed UC only) ----------------
-    S=sc.read_h5ad('/share/fsmresfiles/UC/revision_jenny/UC_shared_inputs/uc_cosmx_colocal_input.h5ad')
+    S=sc.read_h5ad('/share/fsmresfiles/UC/revision_jenny/_shared_inputs/UC_shared_inputs/uc_cosmx_colocal_input.h5ad')
     S=lognorm(S[(S.obs['cohort'].astype(str).str.contains('Serial'))&(S.obs['condition'].astype(str)=='UC')].copy())
     S.obs['ct']=S.obs['cell_type_short'].astype(str); S.obs['piece']=S.obs['block'].astype(str); S.obsm['xy']=S.obs[['x_um','y_um']].values
     V=sc.read_h5ad('/share/fsmresfiles/UC/AtoMx/UC_serial_cuts/1000plex/I0286RI0277R1119/h5ad_obj/qc_norm_log1p.h5ad')
@@ -99,7 +99,7 @@ if _run('F3EIJ_ligand_regulator_cooccurrence'):
         ax.text(xe+(0.006 if r['r']>0 else -0.006),i,f"r:{r['r']:.3f}",va='center',ha='left' if r['r']>0 else 'right',fontsize=9.5)
     ax.legend(handles=[Patch(facecolor='#D62828',edgecolor='black',label='P < 0.05'),Patch(facecolor='#F77F00',edgecolor='black',label='P < 0.1'),
                        Patch(facecolor='#FCBF49',edgecolor='black',label='P ≥ 0.1')],loc='lower right',frameon=False,fontsize=11)
-    plt.tight_layout(); fig.savefig(f'{O}/fig2c_bar_combined.png',bbox_inches='tight',dpi=300); plt.close(fig)
+    plt.tight_layout(); fig.savefig(f'{O}/Fig3E_bar_combined.png',bbox_inches='tight',dpi=300); plt.close(fig)
     g3=lambda x: f'{x:#.3g}'.rstrip('.')
     M.assign(nr=lambda x: -x.r.abs(),analysis=lambda x: x.analysis.replace({'Serial 6K':'6K','Combined':'WTX + 6K'})).sort_values(['analysis','p','nr']).assign(**{'Spearman r (95% CI)':lambda x: [f'{g3(a)} ({g3(b)}–{g3(c)})' for a,b,c in zip(x.r,x.r_lo,x.r_hi)],
         'P':lambda x: x.p.map(g3),'FDR q (all pairs)':lambda x: x.q.map(g3)})[['analysis','ligand','TF','Spearman r (95% CI)','P','FDR q (all pairs)','pieces','n_fibs']].rename(columns={
@@ -150,7 +150,7 @@ if _run('F3EIJ_ligand_regulator_cooccurrence'):
     plt.xlim(0.6,float(cell['CI_high'].max())+0.35)
     ax.set_xlabel('OR for Fib Activation',fontsize=13); ax.set_ylabel('Cell Type (Neighborhood Density)',fontsize=14)
     ax.tick_params(axis='x',labelsize=12); ax.tick_params(axis='y',labelsize=12); ax.invert_yaxis()
-    plt.tight_layout(); fig.savefig(f'{O}/fig2n_forest_allsamples.png',bbox_inches='tight',dpi=300); plt.close(fig)
+    plt.tight_layout(); fig.savefig(f'{O}/Fig3J_forest_allsamples.png',bbox_inches='tight',dpi=300); plt.close(fig)
 
     # ---------------- Fig 3I: co-occurrence with activated fibroblasts ----------------
     # squidpy co-occurrence score computed directly: pair counts within each piece in 20-um shells, pooled over pieces
@@ -187,7 +187,7 @@ if _run('F3EIJ_ligand_regulator_cooccurrence'):
     ax.axhline(1,color='gray',linestyle='--',linewidth=1)
     ax.set_title(''); ax.set_ylabel('Co-occurrence Score w/ Activ Fib'); ax.set_xlabel('Distance (µm)'); ax.set_xlim(20,500)
     ax.legend(title='Cell Type',frameon=False,loc='center left',bbox_to_anchor=(1.02,0.5),fontsize=9,title_fontsize=9,handlelength=1.2,handletextpad=0.4)
-    plt.tight_layout(); fig.savefig(f'{O}/fig2m_cooccurrence_allsamples.png',bbox_inches='tight',dpi=300); plt.close(fig)
+    plt.tight_layout(); fig.savefig(f'{O}/Fig3I_cooccurrence_allsamples.png',bbox_inches='tight',dpi=300); plt.close(fig)
 
 
 # Section F3D_ligand_activity: NicheNet AUROC of the top 20 Mac S+M+S+ ligands; highlighted = a pair at P < 0.1 in Fig 3E
@@ -196,7 +196,7 @@ if _run('F3D_ligand_activity'):
     import numpy as np, pandas as pd, scanpy as sc, matplotlib
     matplotlib.use('Agg'); import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
-    O='/share/fsmresfiles/UC/revision_jenny/Fig2D_nichenet_ligand_activity'; F2='/share/fsmresfiles/UC/revision_jenny/Fig2E_I_J_ligand_regulator_cooccurrence_neighbourhood'; NN='/share/fsmresfiles/UC/scRNA-seq/merged_9p_wip'
+    O='/share/fsmresfiles/UC/revision_jenny/Fig3D_nichenet_ligand_activity'; F2='/share/fsmresfiles/UC/revision_jenny/Fig3E_I_J_ligand_regulator_cooccurrence_neighbourhood'; NN='/share/fsmresfiles/UC/scRNA-seq/merged_9p_wip'
     ligand_activities=pd.read_csv(f'{NN}/ogn_spp1_mac_nichenet_ligand_activities.csv')
     T=pd.read_csv(f'{F2}/supp_table_fig2c_allsamples.csv'); T=T[T.Cohort=='WTX + 6K']
     validated=sorted(set(T.loc[T['P'].astype(float)<0.1,'Ligand (Mac S+M+S+)']))
@@ -232,4 +232,4 @@ if _run('F3D_ligand_activity'):
     legend_elements=[Line2D([0],[0],marker='o',color='w',markerfacecolor='#E63946',markersize=10,markeredgecolor='black',markeredgewidth=1,label='Spatially Supported (P < 0.1)'),
                      Line2D([0],[0],marker='o',color='w',markerfacecolor='#A8DADC',markersize=10,markeredgecolor='black',markeredgewidth=1,label='Predicted')]
     ax.legend(handles=legend_elements,loc='upper left',bbox_to_anchor=(0.72,1.0),fontsize=9.5,frameon=True,borderaxespad=0)
-    plt.tight_layout(); fig.savefig(f'{O}/fig1i_ligand_activity.png',bbox_inches='tight',dpi=300); plt.close(fig)
+    plt.tight_layout(); fig.savefig(f'{O}/Fig3D_ligand_activity.png',bbox_inches='tight',dpi=300); plt.close(fig)

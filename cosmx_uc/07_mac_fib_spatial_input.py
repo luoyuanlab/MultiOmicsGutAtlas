@@ -7,8 +7,8 @@ fibroblast ('union-both': label OR fibroblast detecting both OGN and RSPO3; capp
 NicheNet response-program counts.
 
 Inputs:  UC 6K+custom h5ad (Processed_merged_upd; its processing is not in this repository), CosMx 6K ProSeg *_proseg_anno.h5ad, NicheNet ligand_target_matrix_nsga2r_final.rds
-Outputs: UC_shared_inputs/uc_cosmx_colocal_input.h5ad (read by 09, 10);
-         Fig2H_cosmx_fib_mac_distance/intermediate/ligand_sender_cells.csv.gz (read by 11, 12), ligand_programs.csv
+Outputs: _shared_inputs/UC_shared_inputs/uc_cosmx_colocal_input.h5ad (read by 09, 10);
+         Fig3H_cosmx_fib_mac_distance/intermediate/ligand_sender_cells.csv.gz (read by 11, 12), ligand_programs.csv
 Run:     python <file>, or RUN_SECTIONS=<id>[,<id>] python <file>
 """
 import os as _os
@@ -27,7 +27,7 @@ if _run('F3H_distance_input'):
     import warnings; warnings.filterwarnings('ignore')
     import numpy as np, pandas as pd, scanpy as sc, anndata as ad, scipy.sparse as sp
     from scipy.spatial import cKDTree
-    INPUT='/share/fsmresfiles/UC/revision_jenny/UC_shared_inputs/uc_cosmx_colocal_input.h5ad'
+    INPUT='/share/fsmresfiles/UC/revision_jenny/_shared_inputs/UC_shared_inputs/uc_cosmx_colocal_input.h5ad'
     UM=0.12028; ZSEL=2
     T='/share/fsmresfiles/UC/AtoMx/07212026_transfer'
     SERIAL={'i900':('/share/fsmresfiles/UC/AtoMx/03312026/stim_alignment_ar2_250hvg/proseg_viewer/i900_proseg_anno.h5ad','i900','Control',np.nan),
@@ -66,11 +66,11 @@ if _run('F3H_distance_input'):
           .agg(sections=('section_id','nunique'),cells=('cell_type_short','size'),
                sms_mac=('cell_type_short',lambda x:(x=='Mac S+M+S+').sum()),ogn_fib=('cell_type_short',lambda x:(x=='OGN+RSPO3+ Fib').sum()))
           .reset_index())
-    summ.to_csv('/share/fsmresfiles/UC/revision_jenny/Fig2H_cosmx_fib_mac_distance/cohort_summary.csv',index=False)
+    summ.to_csv('/share/fsmresfiles/UC/revision_jenny/Fig3H_cosmx_fib_mac_distance/cohort_summary.csv',index=False)
 
     # per-macrophage distance, receptor and response-program table
     import pyreadr
-    O='/share/fsmresfiles/UC/revision_jenny/Fig2H_cosmx_fib_mac_distance'; NN='/share/fsmresfiles/ydn4687/nichenet'
+    O='/share/fsmresfiles/UC/revision_jenny/Fig3H_cosmx_fib_mac_distance'; NN='/share/fsmresfiles/ydn4687/nichenet'
     OGN='OGN+RSPO3+ Fib'; CAP=100; NTOP=50
     REC={'IL33':['IL1RL1','IL1RAP'],'CXCL12':['CXCR4','ACKR3'],'FGF7':['FGFR1','FGFR2','NRP1'],'IGF1':['IGF1R','IGF2R']}
     A=sc.read_h5ad(INPUT); o=A.obs.copy()

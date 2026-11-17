@@ -5,7 +5,7 @@ Panels: Fig 2H (DPT pseudotime UMAP), Fig 2I (PROGENy TGF-b / NF-kB / TNF-a alon
         Fig 2J (Palantir pseudotime vs disease severity by root); supp tables for 2I, 2J and the ADAMDEC1+ fraction.
 Inputs: UC atlas h5ad and subcluster4/ fibroblast UMAP + Harmony embedding (04_fibroblast_subclustering.R);
         adamdec1_sample_proportions.csv (per-sample ADAMDEC1+ fraction of connective cells).
-Outputs: Fig1H-J_fibroblast_trajectory/ (pseudotime CSV, intermediate/ tables, panels, supp tables).
+Outputs: Fig2H-J_fibroblast_trajectory/ (pseudotime CSV, intermediate/ tables, panels, supp tables).
 Run: python <file>, or RUN_SECTIONS=<id>[,<id>...] python <file>.
 """
 import os
@@ -32,7 +32,7 @@ def _run(section):
 
 M = '/share/fsmresfiles/UC/scRNA-seq/merged_9p_wip'
 ATLAS = f'{M}/pdated_annoed_all_cell_types.h5ad'
-O = '/share/fsmresfiles/UC/revision_jenny/Fig1H-J_fibroblast_trajectory'
+O = '/share/fsmresfiles/UC/revision_jenny/Fig2H-J_fibroblast_trajectory'
 BLACK = '#1b1b1f'
 PERICYTES = ['CD36+ Peri', 'RERGL+ Contr Peri']
 PATHS = ['TGFb', 'NFkB', 'TNFa']; LAB = {'TGFb': 'TGF-β', 'NFkB': 'NF-κB', 'TNFa': 'TNF-α'}
@@ -194,7 +194,7 @@ if _run('F2J_disease_alignment_by_root'):
     ax.set_xlabel('Palantir Pseudotime vs Disease Severity\n(Spearman rho, 95% CI across patients)')
     ax.set_title('Disease Alignment by Root')
     pad = 0.05; ax.set_xlim(min(m['lo'].min(), 0) - pad, xmax_txt + 0.17); ax.margins(y=0.22)
-    plt.tight_layout(); fig.savefig(f'{O}/fig1_disease_alignment_by_root.png', bbox_inches='tight'); plt.close(fig)
+    plt.tight_layout(); fig.savefig(f'{O}/Fig2J_disease_alignment_by_root.png', bbox_inches='tight'); plt.close(fig)
 
 
 # Section F2J_root_supp_tables: supp tables of the ADAMDEC1+ fraction model (BH over 3 contrasts) and disease alignment by root
@@ -270,7 +270,7 @@ if _run('F2H_pseudotime_umap'):
                            bbox=dict(boxstyle='round,pad=0.15', fc='white', ec='none', alpha=0.6))
     ax.set_xticks([]); ax.set_yticks([]); [sp.set_visible(False) for sp in ax.spines.values()]
     cb = fig.colorbar(sca, ax=ax, fraction=0.04, pad=0.02); cb.set_label('Fibroblast Pseudotime', fontsize=17); cb.ax.tick_params(labelsize=14)
-    fig.tight_layout(); fig.savefig(f'{O}/fig1_fibroblast_pseudotime_umap.png', bbox_inches='tight')
+    fig.tight_layout(); fig.savefig(f'{O}/Fig2H_fibroblast_pseudotime_umap.png', bbox_inches='tight')
 
 
 # Section F2I_signalling_heatmap: pathway activity heatmap (z per pathway, stars = BH q) with a mean-pseudotime strip (Fig 2I)
@@ -309,4 +309,4 @@ if _run('F2I_signalling_heatmap'):
     axh.set_xlabel('Fibroblast Activation Trajectory'); axh.set_ylabel('')
     axh.set_xticklabels(cols, rotation=25, ha='right', rotation_mode='anchor', fontsize=14); axh.set_yticklabels(axh.get_yticklabels(), rotation=0, fontsize=16)
     axh.text(1.0, -0.47, 'Paired Wilcoxon vs ADAMDEC1⁺ (same patients), BH-FDR: * q<0.1, ** q<0.05, *** q<0.01', transform=axh.transAxes, ha='right', va='top', fontsize=10.5, color='#777777')
-    fig.savefig(f'{O}/fig1_functional_pathways_pseudotime.png', bbox_inches='tight')
+    fig.savefig(f'{O}/Fig2I_functional_pathways_pseudotime.png', bbox_inches='tight')

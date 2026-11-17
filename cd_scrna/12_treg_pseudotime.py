@@ -4,7 +4,7 @@
 Inputs   CD atlas h5ad (09_atlas_h5ad_conversion.ipynb); control/inactive/active object without cycling cells
          (ctrl_inact_act_sccoda_no_cycle_correct_cat_adata.h5ad, obs used as is); treg_ptbin_markers.xlsx (Fig 4F genes)
 Outputs  cd_treg_rebuild_rowfix/objects/: Treg input objects, treg_pseudotime.h5ad and treg_pseudotime_bins.csv
-         (read by 13-15, cosmx_cd and treatment_validation); Fig3D-I_treg_pseudotime_signals/: panels and CSVs
+         (read by 13-15, cosmx_cd and treatment_validation); Fig4D-I_treg_pseudotime_signals/: panels and CSVs
 Sections treg_inputs -> treg_selection_dpt -> doublet_branch_dpt -> F4DF_module_scores_markers -> F4E_pseudotime_umap
          -> F4E_suppression_scatter   (RUN_SECTIONS=<id>,<id> runs a subset)
 """
@@ -20,7 +20,7 @@ def _run(section):
 
 
 D = '/share/fsmresfiles/UC/revision_jenny/cd_treg_rebuild_rowfix'
-FIG = '/share/fsmresfiles/UC/revision_jenny/Fig3D-I_treg_pseudotime_signals'
+FIG = '/share/fsmresfiles/UC/revision_jenny/Fig4D-I_treg_pseudotime_signals'
 
 # ---- Section treg_inputs: control/inactive/active atlas without cycling cells (X rows from the atlas) and its Treg subset
 if _run('treg_inputs'):
@@ -176,7 +176,7 @@ if _run('F4DF_module_scores_markers'):
         a.set_title(k, fontsize=16)
     fig.subplots_adjust(wspace=0.0, left=0.0, right=0.93)
     sm = plt.cm.ScalarMappable(cmap='Reds', norm=mcolors.Normalize(0, vmax)); fig.colorbar(sm, cax=fig.add_axes([0.94, 0.15, 0.012, 0.65]))
-    fig.savefig(f'{FIG}/fig3D_module_scores.png', dpi=300, bbox_inches='tight')
+    fig.savefig(f'{FIG}/Fig4D_module_scores.png', dpi=300, bbox_inches='tight')
     # Fig 4F: Wilcoxon per pseudotime bin (non-Control Tregs, log1p); curated genes minus KLRD1 and ARID5B
     f = t[t.obs['condition_summary'].astype(str) != 'Control'].copy(); f.X = f.layers['log1p']
     f.obs['pt_bin'] = f.obs['pt_bin'].astype(int).astype(str).astype('category')
@@ -209,7 +209,7 @@ if _run('F4DF_module_scores_markers'):
     ax.legend(handles=h2, loc='upper left', bbox_to_anchor=(1.01, 0.70), frameon=False, fontsize=11, labelspacing=1.6, borderpad=0.8, handletextpad=1.0)
     cax = ax.inset_axes([1.36, 0.08, 0.022, 0.62]); cb = fig.colorbar(plt.cm.ScalarMappable(cmap=cmap, norm=norm), cax=cax)
     cb.set_label('Log2FC', fontsize=12, labelpad=6); cb.ax.tick_params(labelsize=10)
-    fig.savefig(f'{FIG}/fig3F_marker_dotplot.png', dpi=300, bbox_inches='tight')
+    fig.savefig(f'{FIG}/Fig4F_marker_dotplot.png', dpi=300, bbox_inches='tight')
     out = lfc.T.round(3).add_prefix('log2FC_bin').join(padj.T.apply(lambda c: c.map(lambda z: float('%.3g' % z))).add_prefix('padj_bin'))
     out.to_csv(f'{FIG}/fig3F_marker_dotplot.csv')
 
@@ -223,7 +223,7 @@ if _run('F4E_pseudotime_umap'):
     fig, ax = plt.subplots(figsize=(6.1, 4.6))
     sc.pl.umap(t, color='Pseudotime', cmap=purple, vmin=0, vmax=1, frameon=False, s=22, ax=ax, show=False)
     ax.set_title('Diffusion Pseudotime', fontsize=15)
-    fig.savefig(f'{FIG}/fig3E_pseudotime_umap.png', dpi=300, bbox_inches='tight'); plt.close(fig)
+    fig.savefig(f'{FIG}/Fig4E_pseudotime_umap.png', dpi=300, bbox_inches='tight'); plt.close(fig)
 
 
 # ---- Section F4E_suppression_scatter: suppressive score (FOXP3, CTLA4, IL2RA, BATF, CD27) vs rank-normalised DPT;
@@ -395,5 +395,5 @@ if _run('F4E_suppression_scatter'):
           Line2D([], [], color='black', lw=2.2, ls='--')]
     fig.legend(hl, ['LOWESS (95% CI)', 'Linear Mixed Model'], loc='upper center', bbox_to_anchor=(0.47, 0.03), ncol=2,
                fontsize=14, frameon=False, handlelength=1.8, columnspacing=1.4)
-    fig.savefig(f'{STEM}.png', dpi=300, bbox_inches='tight', pad_inches=0.05)
+    fig.savefig(f'{FIG}/Fig4E_suppression_score_vs_pseudotime.png', dpi=300, bbox_inches='tight', pad_inches=0.05)
     plt.close(fig)

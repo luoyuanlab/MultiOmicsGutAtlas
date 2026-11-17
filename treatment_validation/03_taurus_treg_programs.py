@@ -569,7 +569,7 @@ if _run('F6A_post_treatment_difference'):
 # F6A_pathways_biopsy: the six Treg suppression pathways of Fig 4G scored in TAURUS Tregs, biopsy-level LMM (Fig 6A IL-2/STAT5, TNFR2)
 # ======================================================================================================================
 if _run('F6A_pathways_biopsy'):
-    G3 = pd.read_csv(f'{RJ}/Fig3D-I_treg_pseudotime_signals/Fig3G_pathways_along_pseudotime_stats.csv')
+    G3 = pd.read_csv(f'{RJ}/Fig4D-I_treg_pseudotime_signals/Fig3G_pathways_along_pseudotime_stats.csv')
     G3 = G3[G3.resource == 'Suppression_panel'].reset_index(drop=True)   # the 6 Treg suppression rows of Fig 4G
     SETS = list(G3.gene_set); PATH = dict(zip(G3.gene_set, G3.pathway))
     msig = pd.read_csv(f'{D}/archive/csv/msigdb_human_snapshot.csv.gz', usecols=['geneset', 'genesymbol'])

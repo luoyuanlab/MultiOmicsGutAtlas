@@ -12,8 +12,8 @@ We integrated public and new single-cell RNA-seq data into atlases of ulcerative
 
 - **UC.** With inflammation, macrophages shift from SELENOP⁺ resident to monocyte-derived states, alongside fibroblast activation from ADAMDEC1⁺ through OGN⁺RSPO3⁺ to activated states. In tissue, SELENOP⁺MMP9⁺SPP1⁺ macrophages co-localise with activated and TNC-high OGN⁺RSPO3⁺ fibroblasts. A graph-based model imputes genes missing from lower-plex CosMx panels.
 - **CD.** Tregs lose suppressive programs along a pseudotime trajectory. A Treg Suppression Score derived from this trajectory is high in antigen-presenting niches and near dendritic cells, and lower close to OGN⁺RSPO3⁺ fibroblast stroma, where CXCL12 is high.
-- **Anti-TNF.** In the public TAURUS cohort, non-remission after anti-TNF is associated with persistent macrophage-derived signals of the low-suppression niche (OSM, IL1B, IL6).
-- **Spatial proteomics.** Protein imaging separates inflammatory myeloid cells in UC from antigen-presenting myeloid cells and activated Tregs in CD.
+- **Anti-TNF.** In the public TAURUS cohort, non-remission after anti-TNF is associated with persistent macrophage-derived signals of the low-suppression niche (OSM, IL1B, IL6). In CD resections (CosMx 6K), CD80⁺ macrophages sit closer to CTLA4⁺ and CD28⁺ Tregs, and PD-L1⁺ macrophages closer to PD-1⁺ Tregs, than expected by chance.
+- **Spatial proteomics.** Protein measured in the same cells supports the RNA-defined lineages in UC and CD, and in CD ileum PD-L1⁺ macrophages lie closer to PD-1⁺ Tregs than expected.
 
 ## Data
 
@@ -33,9 +33,9 @@ Each folder has its own README with one line per file (analysis, inputs, outputs
 uc_scrna/              UC scRNA-seq atlas: integration, annotation, macrophage and fibroblast analyses (Fig 2, Fig 3D/G)
 cd_scrna/              CD scRNA-seq atlas and Treg pseudotime, pathways and ligand-receptor prioritization (Fig 4)
 cosmx_uc/              UC CosMx 1K / 6K / WTX: processing, annotation, macrophage-fibroblast spatial analyses (Fig 3)
-cosmx_cd/              CD CosMx: Treg label transfer, Treg Suppression Score, neighbourhoods, APCs, CXCL12-High Regions (Fig 5)
-treatment_validation/  TAURUS anti-TNF scRNA-seq: Treg programs and cytokine sources (Fig 6)
-cosmx_multiomics/      CosMx spatial proteomics, UC vs CD (Fig 7)
+cosmx_cd/              CD CosMx: Treg label transfer, Treg Suppression Score, neighbourhoods, APCs, CXCL12-High Regions, ligand-receptor proximity (Fig 5, Fig 6C-D)
+treatment_validation/  TAURUS anti-TNF scRNA-seq: Treg programs, cytokine sources and ligand senders (Fig 6A-B)
+cosmx_multiomics/      CosMx spatial proteomics: protein-defined lineages, PD-L1/PD-1 proximity (Supp 6D-E, 9I-J, 11D)
 cite-tcr/              CITE-seq protein of macrophages; TCR repertoire of Tregs
 imputation_model/      GCN gene-imputation model for lower-plex CosMx panels (with tutorial)
 imputation_benchmark/  Benchmark of the GCN against Tangram, gimVI, stPlus, SPRITE and CellPLM
@@ -70,18 +70,18 @@ The tables list the code behind each panel and supplementary table. "Not in repo
 | Fig 3 | A `cosmx_uc/05` (1K Seurat objects: not in repo); B-C `cosmx_uc/01`, `03`, `04`; D `uc_scrna/14`, `cosmx_uc/09`; E `cosmx_uc/07-09`; F `cosmx_uc/10`; G `uc_scrna/14-15`; H `cosmx_uc/07`, `11-12`; I-J `cosmx_uc/09` |
 | Fig 4 | A-B `cd_scrna/01-10`; C `cd_scrna/11`; D-F `cd_scrna/12`; G `cd_scrna/14`; H-I `cd_scrna/15-16` |
 | Fig 5 | A `cosmx_cd/14` (WTX biopsies `cosmx_cd/01-02`); B `cosmx_cd/11-12`, `14`; C `cosmx_cd/12-13`; D `cosmx_cd/15`; E-F `cosmx_cd/16`; score and inputs `cosmx_cd/03-10`, `cd_scrna/16` (resection cell metadata table: not in repo) |
-| Fig 6 | A `treatment_validation/03`; B `treatment_validation/04`; data preparation `treatment_validation/01-02` |
-| Fig 7 | A-E `cosmx_multiomics/05`; UC and CD objects `cosmx_multiomics/01-04` |
+| Fig 6 | A `treatment_validation/03`; B `treatment_validation/04`; C-D `cosmx_cd/19` (statistics `cosmx_cd/18`; sender groups from `treatment_validation/05`); TAURUS data preparation `treatment_validation/01-02` |
 | Supp 1 | `uc_scrna/02-08` |
 | Supp 2 | `uc_scrna/03`, `08` |
 | Supp 3 | A `uc_scrna/04` (section 4); B-C `uc_scrna/01`, `06`; D `uc_scrna/09` |
 | Supp 4 | A-B `cite-tcr/01-02`; C-D `uc_scrna/13` |
 | Supp 5 | A-B `uc_scrna/13`; C `uc_scrna/16` |
-| Supp 6 | A-C `cosmx_uc/01`; D `cosmx_uc/03`, `04` (UC 6K QC and normalisation: not in repo); E `cosmx_uc/10`; F `imputation_model/`; G-H `cosmx_uc/01`, `04`; I `cosmx_uc/04`; J `imputation_benchmark/`; K `cosmx_uc/01`; L `cosmx_uc/02`; M `cosmx_uc/06` |
-| Supp 7 | A-E `cd_scrna/01-10`; F `cite-tcr/01`, `03`; G `cd_scrna/11` |
-| Supp 8 | A-E `cd_scrna/13`; F `cd_scrna/14`; G-H `cd_scrna/16`; I `cite-tcr/04-05`, `cosmx_cd/08-09` |
-| Supp 9 | A-B `cosmx_cd/12-13`; C `cosmx_cd/17`; D `cosmx_cd/15`; E-F `cosmx_cd/16` |
-| Supp 10 | `treatment_validation/05` |
+| Supp 6 | A-C `cosmx_uc/01`; D-E `cosmx_multiomics/07` (UC object `cosmx_multiomics/01`, `03`); F `cosmx_uc/03`, `04` (UC 6K QC and normalisation: not in repo); G `cosmx_uc/10` |
+| Supp 7 | A `imputation_model/`; B `imputation_benchmark/`; C `cosmx_uc/01`, `04`; D `cosmx_uc/02`; E `cosmx_uc/06` |
+| Supp 8 | A-E `cd_scrna/01-10`; F `cite-tcr/01`, `03`; G `cd_scrna/11` |
+| Supp 9 | A-E `cd_scrna/13`; F `cd_scrna/14`; G-H `cd_scrna/16`; I-J `cosmx_multiomics/07` (CD object `cosmx_multiomics/02`, `04`, `06`) |
+| Supp 10 | A `cosmx_cd/12-13`; B `cosmx_cd/17`; C `cosmx_cd/15`; D-E `cosmx_cd/16` |
+| Supp 11 | A `treatment_validation/05`; B-C `cosmx_cd/19` (statistics `cosmx_cd/18`); D `cosmx_multiomics/07` (CD object `cosmx_multiomics/06`) |
 
 | Supplementary table | Code |
 |---|---|
@@ -89,14 +89,14 @@ The tables list the code behind each panel and supplementary table. "Not in repo
 | 3 Lineage-wise silhouette scores | `uc_scrna/07-08` |
 | 4 SELENOP⁺ vs SELENOP⁻ GSEA | `uc_scrna/10` |
 | 7 GCN imputation benchmark | `imputation_benchmark/07` |
-| 9 TCR repertoire | `cite-tcr/05` |
-| 10 Gene sets, signatures and LR modules | `cosmx_cd/10` (score genes), `cosmx_cd/13` (LR modules), `cd_scrna/14` (pathway gene sets) |
+| 9 TCR repertoire | `cite-tcr/05` (Treg labels `cosmx_cd/08-09`) |
+| 10 Gene sets, signatures and LR modules | `cosmx_cd/10` (score genes), `cosmx_cd/13` (LR modules; 10b niche signalling estimates, section `S9B_cn_signalling`), `cd_scrna/14` (pathway gene sets) |
 | 11 TAURUS biopsy-level models | `treatment_validation/03-04` |
-| 12 Spatial proteomics panel and marker use | `cosmx_multiomics/05` (gates and markers; the whole-panel marker screen is not in repo) |
+| 12 Spatial proteomics panel and marker use | `cosmx_multiomics/07` (protein gates; the whole-panel marker screen is not in repo) |
 
 ### Run order across folders
 
-`uc_scrna` and `cd_scrna` atlases first. `uc_scrna/14` feeds `cosmx_uc/08`. In `cd_scrna`, `12 → 13, 14, 15 → 16`; `cd_scrna/12` and `16` (section `immune_sender_ranking`) feed `cosmx_cd/08-10`; `cosmx_cd/09` feeds `cite-tcr/05`; `cd_scrna/12`, `14` and `cosmx_cd/10` feed `treatment_validation/03`. `imputation_model/` runs before the imputed-1K steps of `cosmx_uc/`.
+`uc_scrna` and `cd_scrna` atlases first. `uc_scrna/14` feeds `cosmx_uc/08`. In `cd_scrna`, `12 → 13, 14, 15 → 16`; `cd_scrna/12` and `16` (section `immune_sender_ranking`) feed `cosmx_cd/08-10`; `cosmx_cd/09` feeds `cite-tcr/05`; `cd_scrna/12`, `14` and `cosmx_cd/10` feed `treatment_validation/03`; `treatment_validation/05` feeds `cosmx_cd/18`. `imputation_model/` runs before the imputed-1K steps of `cosmx_uc/`.
 
 ## Citation
 

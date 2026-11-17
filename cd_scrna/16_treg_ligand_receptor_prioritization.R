@@ -6,7 +6,7 @@
 # Inputs:  objects/nichenet_inputs/ (15_treg_ligand_receptor_inputs.py); objects/nichenet_outputs_lossact/ (two gene-set
 #   tables for F4HI_nichenet_lr, not in repo); NicheNet v2 model files in /share/fsmresfiles/ydn4687/nichenet/.
 # Outputs: objects/nichenet_outputs/ and objects/nichenet_outputs_general_destab/ (priority tables); Fig 4H-I panels and
-#   CSVs in Fig3D-I_treg_pseudotime_signals/; Supp 8G-H panels and CSVs in SuppFig8A-I_treg_pseudotime_robustness/.
+#   CSVs in Fig4D-I_treg_pseudotime_signals/; Supp 8G-H panels and CSVs in SuppFig9A-H_treg_pseudotime_robustness/.
 # Run:     Rscript <file>  or  RUN_SECTIONS=<id>[,<id>] Rscript <file>
 #   (immune_sender_ranking -> F4HI_nichenet_lr -> S8GH_lr_weighting_schemes)
 .RUN_SECTIONS <- Filter(nzchar, trimws(strsplit(Sys.getenv("RUN_SECTIONS", ""), ",")[[1]]))
@@ -228,7 +228,7 @@ load_nn_libs()
 set.seed(1)
 OUT <- file.path(BASE, "objects", "nichenet_outputs_general_destab")
 dir.create(OUT, recursive = TRUE, showWarnings = FALSE)
-FIG <- "/share/fsmresfiles/UC/revision_jenny/Fig3D-I_treg_pseudotime_signals"   # Fig 4H-I panels and CSVs
+FIG <- "/share/fsmresfiles/UC/revision_jenny/Fig4D-I_treg_pseudotime_signals"   # Fig 4H-I panels and CSVs
 obj <- read_nn_obj(file.path(BASE, "objects/nichenet_inputs/strict_treg_imm_general_meta.parquet"),
                    file.path(BASE, "objects/nichenet_inputs/strict_treg_imm_general_counts.parquet"))
 lr_network <- readRDS(file.path(NN, "lr_network_human_21122021.rds"))
@@ -289,7 +289,7 @@ p <- ggplot(stack_all %>% mutate(sender = factor(sender, levels = sender_order))
   theme(legend.position = "right", text = element_text(family = "DejaVu Sans"), axis.line = element_blank(),
         plot.title = element_text(hjust = 0.5, size = 16),
         panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.8))
-ggsave(file.path(FIG, "Fig3H_sender_ligand_families.png"), p, width = 8, height = 7, dpi = 300, device = ragg::agg_png)
+ggsave(file.path(FIG, "Fig4H_sender_ligand_families.png"), p, width = 8, height = 7, dpi = 300, device = ragg::agg_png)
 
 ## Fig 4I: chord, top 25 LR (best sender per LR)
 chord_data <- df %>% group_by(from, to) %>% slice_max(priority_rank_geom, n = 1, with_ties = FALSE) %>% ungroup() %>%
@@ -301,7 +301,7 @@ receptor_importance <- chord_data %>% group_by(to) %>% summarise(total_priority 
 ligand_cols <- colorRampPalette(c("#fee5d9", "#a50f15"))(nrow(ligand_importance)); names(ligand_cols) <- ligand_importance$from
 receptor_cols <- colorRampPalette(c("#deebf7", "#3182bd"))(nrow(receptor_importance)); names(receptor_cols) <- receptor_importance$to
 chord_data$transparency <- 1 - scales::rescale(chord_data$log2fc_late, to = c(0.3, 0.9))
-draw_lr_chord(chord_data, c(ligand_cols, receptor_cols), file.path(FIG, "Fig3I_LR_chord.png"), "Treg State LRs (All Sender Types)")
+draw_lr_chord(chord_data, c(ligand_cols, receptor_cols), file.path(FIG, "Fig4I_LR_chord.png"), "Treg State LRs (All Sender Types)")
 }
 
 
@@ -311,7 +311,7 @@ draw_lr_chord(chord_data, c(ligand_cols, receptor_cols), file.path(FIG, "Fig3I_L
 if (.run("S8GH_lr_weighting_schemes")) {
 suppressPackageStartupMessages({library(dplyr); library(tidyr); library(ggplot2); library(reshape2); library(gridExtra)
   library(grid); library(UpSetR)})
-OUT <- "/share/fsmresfiles/UC/revision_jenny/SuppFig8A-I_treg_pseudotime_robustness"
+OUT <- "/share/fsmresfiles/UC/revision_jenny/SuppFig9A-H_treg_pseudotime_robustness"
 s3 <- function(df) { df[] <- lapply(df, function(x) if (is.numeric(x)) signif(x, 3) else x); df }
 
 df <- read.csv(file.path(BASE, "objects/nichenet_outputs_general_destab/nichenet_destab_late_treg_ligand_strength_imm_logpr.csv"))
@@ -347,7 +347,7 @@ tg <- tableGrob(tabp, rows = NULL, theme = ttheme_minimal(base_size = 13, core =
                                                           colhead = list(fg_params = list(fontface = "bold", hjust = 0, x = 0.08))))
 tg <- gtable::gtable_add_grob(tg, grobs = segmentsGrob(x0 = 0, x1 = 1, y0 = 0, y1 = 0, gp = gpar(lwd = 1.5)), t = 1, l = 1, r = ncol(tg))
 tg <- gtable::gtable_add_grob(tg, grobs = segmentsGrob(x0 = 0, x1 = 1, y0 = 0, y1 = 0, gp = gpar(lwd = 1.5)), t = nrow(tg), l = 1, r = ncol(tg))
-png(file.path(OUT, "ext8G_LR_parameter_schemes.png"), width = 4.6, height = 2.6, units = "in", res = 300)
+png(file.path(OUT, "SuppFig9G_LR_parameter_schemes.png"), width = 4.6, height = 2.6, units = "in", res = 300)
 grid.arrange(tg, top = textGrob("LR Parameter Schemes", gp = gpar(fontsize = 15)))
 dev.off()
 
@@ -365,7 +365,7 @@ p <- ggplot(melt(cor_mat), aes(Var1, Var2, fill = value)) +
         plot.title = element_text(hjust = 0.5, size = 15)) +
   labs(fill = "Spearman ρ", title = "Spearman Correlation of LR Ranks",
        caption = sprintf("n = %d sender-ligand-receptor rows", nrow(df)))
-ggsave(file.path(OUT, "ext8H_LR_rank_spearman.png"), p, width = 5.4, height = 4.6, dpi = 300, bg = "white")
+ggsave(file.path(OUT, "SuppFig9H_LR_rank_spearman.png"), p, width = 5.4, height = 4.6, dpi = 300, bg = "white")
 
 ## Supp 8G: top-50 overlap (UpSet)
 top50 <- lapply(names(weight_schemes), function(nm) rank_wide$pair[rank_wide[[nm]] <= 50]); names(top50) <- names(weight_schemes)
@@ -383,7 +383,7 @@ top50_lr <- lapply(names(weight_schemes), function(nm) {
   rank_wide %>% group_by(from, to) %>% summarise(r = min(.data[[nm]]), .groups = "drop") %>% arrange(r) %>%
     slice_head(n = 50) %>% mutate(lr = paste(from, to, sep = "_")) %>% pull(lr) })
 main_rank <- rank(-df$priority_rank_geom, ties.method = "first"); names(main_rank) <- paste(df$sender, df$from, df$to, sep = "_")
-fig3h <- read.csv("/share/fsmresfiles/UC/revision_jenny/Fig3D-I_treg_pseudotime_signals/Fig3I_top25_LR.csv"); fig3h_lr <- paste(fig3h$from, fig3h$to, sep = "_")
+fig3h <- read.csv("/share/fsmresfiles/UC/revision_jenny/Fig4D-I_treg_pseudotime_signals/Fig3I_top25_LR.csv"); fig3h_lr <- paste(fig3h$from, fig3h$to, sep = "_")
 vs_main <- do.call(rbind, lapply(names(weight_schemes), function(nm) {
   r <- rank_wide[[nm]]; m <- main_rank[rank_wide$pair]
   data.frame(scheme = nm, spearman_vs_fig3H_ranking = cor(r, m, method = "spearman"),
@@ -391,7 +391,7 @@ vs_main <- do.call(rbind, lapply(names(weight_schemes), function(nm) {
              fig3H_top25_LR_in_scheme_top50_LR = sum(fig3h_lr %in% top50_lr[[which(names(weight_schemes) == nm)]]))
 }))
 write.csv(s3(vs_main), file.path(OUT, "ext8GH_schemes_vs_fig3H_ranking.csv"), row.names = FALSE)
-png(file.path(OUT, "ext8G_top50_LR_overlap.png"), width = 6.6, height = 5.2, units = "in", res = 300)
+png(file.path(OUT, "SuppFig9G_top50_LR_overlap.png"), width = 6.6, height = 5.2, units = "in", res = 300)
 print(upset(fromList(top50), sets = rev(names(weight_schemes)), keep.order = TRUE, order.by = "freq", nintersects = NA,
             mainbar.y.label = "Intersection Size", sets.x.label = "Top-50 Rows", text.scale = c(1.4, 1.2, 1.1, 1.1, 1.3, 1.2),
             point.size = 2.8, line.size = 0.9, mainbar.y.max = ceiling(length(core) * 1.35)))

@@ -4,7 +4,7 @@
 Panels: Fig 2E (macrophage subtype composition per patient; Kruskal-Wallis, BH over 6 subtypes);
         Supp 3D (scCODA differential abundance, est. FDR 0.1) and its supp table.
 Inputs: UC atlas h5ad (06_atlas_assembly.R).
-Outputs: SuppFig3D_sccoda/ (effects CSV, panel, supp table); Fig1E_macrophage_composition/ (panel, per-patient CSV).
+Outputs: SuppFig3D_sccoda/ (effects CSV, panel, supp table); Fig2E_macrophage_composition/ (panel, per-patient CSV).
 Run: python <file>, or RUN_SECTIONS=<id>[,<id>...] python <file>. S3D_sccoda runs in the pertpy 1.0.2 environment.
 """
 import os as _os
@@ -91,7 +91,7 @@ if _run('F2E_macrophage_subtype_composition'):
     matplotlib.use('Agg'); import matplotlib.pyplot as plt
     from scipy.stats import kruskal
     from statsmodels.stats.multitest import multipletests
-    O='/share/fsmresfiles/UC/revision_jenny/Fig1E_macrophage_composition'
+    O='/share/fsmresfiles/UC/revision_jenny/Fig2E_macrophage_composition'
     obs=ad.read_h5ad('/share/fsmresfiles/UC/scRNA-seq/merged_9p_wip/pdated_annoed_all_cell_types.h5ad',backed='r').obs[['label','Patient','condition']].astype(str)
     MAC=['SELENOP+SIGLEC1+ Mac','SELENOP+XIST- Mac','SELENOP+MMP9+PLA2G2D+ Mac','SELENOP+MMP9+SPP1+ Mac','Mo-Mac','Inflammatory Mo-Mac']
     SHORT={'SELENOP+SIGLEC1+ Mac':'Mac S+SG+','SELENOP+XIST- Mac':'Mac S+XS-','SELENOP+MMP9+PLA2G2D+ Mac':'Mac S+M+P+',

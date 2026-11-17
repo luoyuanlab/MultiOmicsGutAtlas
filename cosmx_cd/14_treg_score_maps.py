@@ -5,7 +5,7 @@ Panels   Fig 5A WTX biopsy maps with enlarged high and low Treg suppression regi
          Fig 5B resection section 43563_A4 coloured by cellular neighbourhood with rule-selected high- and low-score windows
 Inputs   WTX cell polygons (AtoMx raw data); treg_definition_comparison_per_cell.csv (10); cellular_neighborhoods_v2/ and
          ligand_receptor_state/treg_local_ligand_receptor.csv.gz (11)
-Outputs  /share/fsmresfiles/UC/revision_jenny/Fig4A-F_treg_suppression_niches/ (panels, window and Treg CSVs)
+Outputs  /share/fsmresfiles/UC/revision_jenny/Fig5A-F_treg_suppression_niches/ (panels, window and Treg CSVs)
 Run      python <file>, or RUN_SECTIONS=F5A_wtx_biopsy_maps|F5B_cn_section_map python <file>
 """
 import os
@@ -28,7 +28,7 @@ def _run(section):
 
 
 D = '/share/fsmresfiles/UC/revision_jenny/cd_treg_rebuild_rowfix'; P4 = f'{D}/panels/fig4_and_related'; BR = f'{P4}/B_resection_analyses'
-OUT = '/share/fsmresfiles/UC/revision_jenny/Fig4A-F_treg_suppression_niches'
+OUT = '/share/fsmresfiles/UC/revision_jenny/Fig5A-F_treg_suppression_niches'
 HC, LC = '#b2182b', '#2166ac'   # high / low Treg suppression
 
 
@@ -95,7 +95,7 @@ if _run('F5A_wtx_biopsy_maps'):
     fig.legend(handles=H, loc='lower left', ncol=4, frameon=False, fontsize=17, bbox_to_anchor=(0.03, -0.005), columnspacing=1.2, handletextpad=0.3, borderaxespad=0, borderpad=0)
     cax = fig.add_axes([0.62, 0.045, 0.28, 0.014]); cb = fig.colorbar(sc, cax=cax, orientation='horizontal')
     cb.set_label('Treg Suppression Score (z within biopsy)\n← low suppression          high suppression →', fontsize=17); cb.ax.tick_params(labelsize=15)
-    fig.savefig(f'{OUT}/wtx_biopsy_treg_score_popouts.png', dpi=300, bbox_inches='tight', pad_inches=0.03); fig.savefig(f'{OUT}/wtx_biopsy_treg_score_popouts.pdf', bbox_inches='tight', pad_inches=0.03)
+    fig.savefig(f'{OUT}/Fig5A_wtx_biopsy_treg_score_popouts.png', dpi=300, bbox_inches='tight', pad_inches=0.03); fig.savefig(f'{OUT}/Fig5A_wtx_biopsy_treg_score_popouts.pdf', bbox_inches='tight', pad_inches=0.03)
     TT_ = b[b.z.notna()][['section', 'x', 'y', 'z']].rename(columns={'section': 'piece', 'x': 'x_um', 'y': 'y_um', 'z': 'treg_suppression_score_z'})
     TT_['biopsy'] = TT_.piece.map({k: v.split('\n')[0] for k, v in PID.items()}); TT_['region'] = ''
     for w_ in wins:
@@ -253,4 +253,4 @@ if _run('F5B_cn_section_map'):
            Line2D([0], [0], color=LC, lw=3, ls=(0, (3, 1.5)), label='Low Treg Suppression Region'),
            Line2D([0], [0], ls='', marker='', label='Box value: mean Treg Suppression\nScore (z) of the Tregs in the box')]
     fig.legend(handles=Hh, loc='center left', bbox_to_anchor=(0.88, 0.5), ncol=1, frameon=False, fontsize=15, handletextpad=0.5, labelspacing=0.6)
-    fig.savefig(f'{OUT}/fig4_cn_section_map_boxes.png', dpi=300, bbox_inches='tight', pad_inches=0.03); fig.savefig(f'{OUT}/fig4_cn_section_map_boxes.pdf', bbox_inches='tight', pad_inches=0.03); plt.close(fig)
+    fig.savefig(f'{OUT}/Fig5B_43563_A4_cn_section_map.png', dpi=300, bbox_inches='tight', pad_inches=0.03); fig.savefig(f'{OUT}/Fig5B_43563_A4_cn_section_map.pdf', bbox_inches='tight', pad_inches=0.03); plt.close(fig)

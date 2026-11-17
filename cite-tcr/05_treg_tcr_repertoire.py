@@ -1,10 +1,9 @@
 #!/usr/bin/env python
-"""CITE-seq / TCR: TRBV usage and TCR repertoire of early- (bins 0-1) vs late-pseudotime (bins 2-4) Tregs.
+"""CITE-seq / TCR: TCR repertoire of early- (bins 0-1) vs late-pseudotime (bins 2-4) Tregs (Supplementary Table 9).
 
 Inputs   CITE-seq annotation table and TCR contigs (/share/fsmresfiles/UC/Schipma/cite-seq_combined/);
          pseudotime-bin labels of the 745 CITE-seq Tregs (cosmx_cd/09_treg_label_transfer.R)
-Outputs  SuppFig8A-I_treg_pseudotime_robustness/ext8I_trbv_usage.png, .csv (Supp 8I);
-         cd_treg_rebuild_rowfix/panels/fig4_and_related/D_shared_inputs/supp_table9_tcr_repertoire.csv (Supp Table 9)
+Outputs  cd_treg_rebuild_rowfix/panels/fig4_and_related/D_shared_inputs/supp_table9_tcr_repertoire.csv (Supp Table 9)
 Section  S8I_treg_tcr_repertoire (RUN_SECTIONS=<id> python <file> runs selected sections only)
 """
 import os as _os
@@ -20,14 +19,13 @@ def _run(section):
 
 
 # ======================================================================================================================
-# Section S8I_treg_tcr_repertoire: TRBV usage and TCR repertoire of early- vs late-pseudotime CITE-seq Tregs
-# Panels: Supp Fig 8I, Supp Table 9
+# Section S8I_treg_tcr_repertoire: TCR repertoire of early- vs late-pseudotime CITE-seq Tregs (section id keeps the earlier panel letter)
+# Tables: Supp Table 9
 # ======================================================================================================================
 if _run('S8I_treg_tcr_repertoire'):
-    import numpy as np, pandas as pd, matplotlib.pyplot as plt, seaborn as sns
+    import numpy as np, pandas as pd
     from scipy.stats import chi2_contingency, fisher_exact, mannwhitneyu
-    from statsmodels.stats.multitest import multipletests
-    D = '/share/fsmresfiles/UC/revision_jenny/cd_treg_rebuild_rowfix'; OUT = f'{D}/panels/fig4_and_related'; OUT8 = '/share/fsmresfiles/UC/revision_jenny/SuppFig8A-I_treg_pseudotime_robustness'
+    D = '/share/fsmresfiles/UC/revision_jenny/cd_treg_rebuild_rowfix'; OUT = f'{D}/panels/fig4_and_related'
     C = '/share/fsmresfiles/UC/Schipma/cite-seq_combined'; T = f'{C}/annotation_for_cosmx/third_round'
 
     # ---- quality filter, T/NK cells with TCR contigs
@@ -145,28 +143,3 @@ if _run('S8I_treg_tcr_repertoire'):
 
     for c in ['Early-pseudotime Treg', 'Late-pseudotime Treg']: st9[c] = st9[c].map(fmt)
     st9.to_csv(f'{OUT}/D_shared_inputs/supp_table9_tcr_repertoire.csv', index=False)
-
-    # ---- Supp 8I TRBV usage
-    prod = prod_main[prod_main.TRB_v_gene.notna()]   # cells with a TRB V gene (denominator of the percentages)
-    n = prod.g.value_counts()
-    freq = pd.crosstab(prod.TRB_v_gene, prod.g, normalize='columns') * 100; cnt = pd.crosstab(prod.TRB_v_gene, prod.g)
-    top = cnt.sum(1).sort_values(ascending=False).head(10).index
-    pv = [fisher_exact([[cnt.loc[g, 'Early'], n['Early'] - cnt.loc[g, 'Early']], [cnt.loc[g, 'Late'], n['Late'] - cnt.loc[g, 'Late']]])[1] for g in cnt.index]
-    fdr = pd.Series(multipletests(pv, method='fdr_bh')[1], index=cnt.index)
-    src = pd.DataFrame({'n_early': cnt.Early, 'n_late': cnt.Late, 'pct_early': freq.Early, 'pct_late': freq.Late,
-                        'fisher_p': pd.Series(pv, index=cnt.index), 'fdr_bh': fdr}).sort_values('n_early', ascending=False)
-    src['in_panel_top10'] = src.index.isin(top)
-    src.to_csv(f'{OUT8}/ext8I_trbv_usage.csv', float_format='%.3g')
-    top = sorted(top, key=lambda g: (int(''.join(c for c in g.split('-')[0] if c.isdigit()) or 0), g))
-    long = freq.loc[top].reset_index().melt(id_vars='TRB_v_gene', var_name='pt_bin', value_name='pct')
-    long['pt_bin'] = long.pt_bin.map({'Early': f"Early (n = {n['Early']})", 'Late': f"Late (n = {n['Late']})"})
-    fig, ax = plt.subplots(figsize=(6.6, 4.4))
-    sns.barplot(data=long, x='TRB_v_gene', y='pct', hue='pt_bin', palette=['#dfc6c7', '#885e7c'], ax=ax)
-    for i, g in enumerate(top):
-        if fdr[g] < 0.05: ax.text(i, freq.loc[g].max() + 0.3, '*', ha='center', fontsize=14)
-    ax.set_xticks(range(len(top))); ax.set_xticklabels(top, rotation=90)
-    ax.set_ylabel('Percentage of Cells', fontsize=11); ax.set_xlabel('TRBV Gene', fontsize=11)
-    ax.set_title(f'TRBV Usage in Tregs\nAll TRBV Genes χ² p = {t0.chi2_TRBV_p:.2g}, No Gene FDR < 0.05' if (fdr >= 0.05).all()
-                 else f'TRBV Usage in Tregs\nAll TRBV Genes χ² p = {t0.chi2_TRBV_p:.2g}, * FDR < 0.05', fontsize=11, loc='center')
-    ax.legend(title='Pseudotime Group', fontsize=9, title_fontsize=9, frameon=True, loc='upper left', bbox_to_anchor=(1.01, 1))
-    sns.despine(ax=ax); plt.tight_layout(); fig.savefig(f'{OUT8}/ext8I_trbv_usage.png', dpi=300, bbox_inches='tight')

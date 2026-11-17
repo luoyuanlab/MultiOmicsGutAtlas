@@ -3,7 +3,7 @@
 
 Inputs   treg_pseudotime.h5ad (12_treg_pseudotime.py); decoupler resources (PROGENy, MSigDB, CollecTRI) with local
          snapshots in cd_treg_rebuild_rowfix/objects/ and archive/csv/; utils/http_user_agent.py
-Outputs  Fig3D-I_treg_pseudotime_signals/: Fig 4G panel and CSVs; SuppFig8A-I_treg_pseudotime_robustness/: Supp 8F panel
+Outputs  Fig4D-I_treg_pseudotime_signals/: Fig 4G panel and CSVs; SuppFig9A-H_treg_pseudotime_robustness/: Supp 8F panel
          and driver table; panels/extended_data_fig8/ext8_tf_activity_along_pseudotime.csv (read by treatment_validation/03)
 Sections F4G_pathways -> S8F_tf_correlation -> S8F_tf_heatmap   (RUN_SECTIONS=<id>,<id> runs a subset)
 """
@@ -41,7 +41,7 @@ if _run('F4G_pathways'):
     from scipy import stats
     from statsmodels.stats.multitest import multipletests
 
-    OUT = '/share/fsmresfiles/UC/revision_jenny/Fig3D-I_treg_pseudotime_signals'
+    OUT = '/share/fsmresfiles/UC/revision_jenny/Fig4D-I_treg_pseudotime_signals'
     MIN_CELLS = 3
     BINS = [0, 1, 2, 3, 4]
     plt.rcParams.update({'font.size': 11})
@@ -151,8 +151,8 @@ if _run('F4G_pathways'):
 
     ALL, MEANS = zip(*[binwise_stats(sc, res) for res, sc in scores.items()])
     ALL = pd.concat(ALL, ignore_index=True); MEANS = pd.concat(MEANS, ignore_index=True)
-    ALL.to_csv(f'{OUT}/Fig3G_pathway_stats_all_gene_sets.csv', index=False, float_format='%.3g')
-    MEANS.to_csv(f'{OUT}/Fig3G_pathway_patient_bin_means.csv', index=False, float_format='%.3g')
+    ALL.to_csv(f'{OUT}/Fig4G_pathway_stats_all_gene_sets.csv', index=False, float_format='%.3g')
+    MEANS.to_csv(f'{OUT}/Fig4G_pathway_patient_bin_means.csv', index=False, float_format='%.3g')
 
     # Fig 4G panel: three groups, rows sorted by p within group
     GROUPS = [
@@ -208,7 +208,7 @@ if _run('F4G_pathways'):
             ax.set_xticks([0, 0.2, 0.4, 0.6, 0.8, 1.0]); ax.set_xlabel('Diffusion Pseudotime (rank-scaled)', fontsize=12)
     fig.suptitle('Pathway Activity Along Treg Pseudotime', fontsize=13, y=1.0)
     cax = fig.add_axes([1.03, 0.3, 0.018, 0.4]); cb = fig.colorbar(im, cax=cax); cb.set_label('Activity (z-score)', fontsize=9)
-    fig.savefig(f'{OUT}/Fig3G_pathways_along_pseudotime.png', dpi=300, bbox_inches='tight'); plt.close(fig)
+    fig.savefig(f'{OUT}/Fig4G_pathways_along_pseudotime.png', dpi=300, bbox_inches='tight'); plt.close(fig)
     pd.DataFrame(stat_rows).to_csv(f'{OUT}/Fig3G_pathways_along_pseudotime_stats.csv', index=False, float_format='%.3g')
     vals = pd.DataFrame([r['vals'] for _, rows in blocks for r in rows], index=[r['disp'] for _, rows in blocks for r in rows],
                         columns=[f'window_{i + 1}' for i in range(NW)])
@@ -249,7 +249,7 @@ if _run('S8F_tf_heatmap'):
     matplotlib.use('Agg'); import matplotlib.pyplot as plt
     from scipy import stats, sparse
     from statsmodels.stats.multitest import multipletests
-    OUT = '/share/fsmresfiles/UC/revision_jenny/SuppFig8A-I_treg_pseudotime_robustness'
+    OUT = '/share/fsmresfiles/UC/revision_jenny/SuppFig9A-H_treg_pseudotime_robustness'
     C = pd.read_csv(f'{D}/panels/figure3/tf_pseudotime_correlation/tf_pseudotime_correlation.csv').set_index('tf')
     CF = C[(C.tf_gene_detected_pct >= 1) & (C.n_targets >= 10) & (C.q_sign < 0.05)]
     GROUPS = [('Suppressive / activated TFs (falling)', list(CF.sort_values('median_rho').index[:10]), '#c0392b'),
@@ -320,5 +320,5 @@ if _run('S8F_tf_heatmap'):
         else: ax.set_xticks([0, 0.2, 0.4, 0.6, 0.8, 1.0]); ax.set_xlabel('Diffusion Pseudotime (rank-scaled)', fontsize=12)
     fig.text(0.04, 0.5, 'Transcription Factor', rotation=90, va='center', ha='center', fontsize=12)
     cax = fig.add_axes([1.39, 0.3, 0.014, 0.4]); cb = fig.colorbar(im, cax=cax); cb.set_label('TF activity (z-score)', fontsize=9)
-    fig.savefig(f'{OUT}/ext8_tf_activity_along_pseudotime.png', dpi=300, bbox_inches='tight'); plt.close(fig)
+    fig.savefig(f'{OUT}/SuppFig9F_tf_activity_along_pseudotime.png', dpi=300, bbox_inches='tight'); plt.close(fig)
     pd.DataFrame(rows).to_csv(f'{D}/panels/extended_data_fig8/ext8_tf_activity_along_pseudotime.csv', index=False, float_format='%.3g')

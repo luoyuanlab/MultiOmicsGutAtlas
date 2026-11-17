@@ -2,7 +2,7 @@
 #
 # Panels: Fig 2F (GSEA, CD68+ SELENOP+ vs SELENOP- myeloid cells); Supp Table 4 (all GSEA results).
 # Input: subcluster5/mye_iter3_symfix.RDS (myeloid object, gene symbols harmonised across studies).
-# Outputs: Fig1F_gsea_selenop_symfix/ (DEG CSV, Supp Table 4, plotted values, panel).
+# Outputs: Fig2F_gsea_selenop_symfix/ (DEG CSV, Supp Table 4, plotted values, panel).
 # Run: Rscript <file>, or RUN_SECTIONS=<id>[,<id>...] Rscript <file>.
 .RUN_SECTIONS <- Filter(nzchar, trimws(strsplit(Sys.getenv("RUN_SECTIONS", ""), ",")[[1]]))
 .run <- function(section) {   # all sections run in file order unless RUN_SECTIONS=id1,id2,... is set
@@ -19,7 +19,7 @@ if (.run("F2F_selenop_degs")) {
 # CD68+ myeloid cells (CD68 > 0) are split into SELENOP+ (SELENOP > 0) and SELENOP- groups; Seurat FindMarkers with no
 # expression or fold-change pre-filter. Output: cd68_selenop_pos_neg_degs.csv
 suppressMessages({library(Seurat); library(dplyr)})
-OUT <- "/share/fsmresfiles/UC/revision_jenny/Fig1F_gsea_selenop_symfix"
+OUT <- "/share/fsmresfiles/UC/revision_jenny/Fig2F_gsea_selenop_symfix"
 uc_mye_iter3 <- readRDS("/share/fsmresfiles/UC/scRNA-seq/merged_9p_wip/subcluster5/mye_iter3_symfix.RDS")
 
 CD68_cells  <- subset(uc_mye_iter3, subset = CD68 > 0)
@@ -45,7 +45,7 @@ if (.run("F2F_gsea_supp_table4")) {
 # Outputs: supp_table4_gsea_all.csv (Supp Table 4), fig1f_gsea_plotted.csv (Fig 2F values)
 suppressMessages({library(dplyr); library(DOSE); library(org.Hs.eg.db); library(AnnotationDbi)
   library(clusterProfiler); library(ReactomePA)})
-OUT <- "/share/fsmresfiles/UC/revision_jenny/Fig1F_gsea_selenop_symfix"
+OUT <- "/share/fsmresfiles/UC/revision_jenny/Fig2F_gsea_selenop_symfix"
 degs <- read.csv(file.path(OUT, "cd68_selenop_pos_neg_degs.csv"))
 degs <- degs %>% filter(avg_log2FC > 0.5 | avg_log2FC < -0.5) %>% select(X, avg_log2FC) %>% rename(gene = X)
 degs$entrez <- as.vector(mapIds(org.Hs.eg.db, keys = degs$gene, column = "ENTREZID", keytype = "SYMBOL", multiVals = "first"))
@@ -88,7 +88,7 @@ write.csv(f %>% select(ID, Description, Database, setSize, NES, pvalue, p.adjust
 if (.run("F2F_gsea_barplot")) {
 # Reads fig1f_gsea_plotted.csv (section F2F_gsea_supp_table4). Output: fig1f_gsea_selenop.png
 suppressMessages({library(dplyr); library(ggplot2)})
-OUT <- "/share/fsmresfiles/UC/revision_jenny/Fig1F_gsea_selenop_symfix"
+OUT <- "/share/fsmresfiles/UC/revision_jenny/Fig2F_gsea_selenop_symfix"
 f <- read.csv(file.path(OUT, "fig1f_gsea_plotted.csv")) %>% arrange(NES) %>%
   mutate(Pathway = factor(Description, levels = Description[order(NES)]),
          Color_Group = case_when(NES > 0 & p.adjust < 0.1 ~ "Higher in SELENOP⁺ (FDR q < 0.1)", NES > 0 ~ "Higher in SELENOP⁺ (q ≥ 0.1)",

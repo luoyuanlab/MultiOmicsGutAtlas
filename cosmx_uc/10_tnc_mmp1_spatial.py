@@ -4,8 +4,8 @@
 Panels:  Fig 3F (WTX maps; inset = logistic regression with piece fixed effects), Supp 6E (TNC vs its top-7 NicheNet
          regulators within OGN+RSPO3+ fibroblasts, ranked against 300 random genes)
 Inputs:  uc_cosmx_colocal_input.h5ad (07), WTX h5ad (01, 03)
-Outputs: Fig2F_tnc_mmp1_spatial/ (fig2_tnc_mmp1_combined.png, tnc_near_mmp1_pooled.csv, tnc_near_mmp1_by_piece.csv,
-         tnc_mmp1_boxed_pairs.csv); SuppFig6E_tnc_regulators/ (fig_mmp1_tnc_pathway.png, pathway_spatial_mmp1_tnc.csv,
+Outputs: Fig3F_tnc_mmp1_spatial/ (Fig3F_tnc_mmp1_combined.png, tnc_near_mmp1_pooled.csv, tnc_near_mmp1_by_piece.csv,
+         tnc_mmp1_boxed_pairs.csv); SuppFig6G_tnc_regulators/ (fig_mmp1_tnc_pathway.png, pathway_spatial_mmp1_tnc.csv,
          pathway_spatial_tnc_background.csv)
 Run:     python <file>, or RUN_SECTIONS=<id>[,<id>] python <file>
 """
@@ -26,7 +26,7 @@ def _run(section):
 # Section F3F_tnc_near_mmp1_test: TNC detection in OGN+RSPO3+ Fib <= 50 um vs > 50 um from MMP1+ Mac S+M+S+ (Fig 3F inset)
 if _run('F3F_tnc_near_mmp1_test'):
     import statsmodels.formula.api as smf
-    O = '/share/fsmresfiles/UC/revision_jenny/Fig2F_tnc_mmp1_spatial'; PX = 0.12028; MAX_UM = 50; MIN_NEAR = 3
+    O = '/share/fsmresfiles/UC/revision_jenny/Fig3F_tnc_mmp1_spatial'; PX = 0.12028; MAX_UM = 50; MIN_NEAR = 3
     def two(a):
         g = a[:, [list(a.var_names).index(x) for x in ('TNC', 'MMP1')]].to_memory(); return g, (g.X.toarray() if hasattr(g.X, 'toarray') else np.asarray(g.X))
     cells = []
@@ -42,7 +42,7 @@ if _run('F3F_tnc_near_mmp1_test'):
         if p == 'I0346': continue                                                       # healthy control
         i = np.where((o.slide.astype(str) == s).values & (o.patient.astype(str) == p).values)[0]
         add('WTX', f'{s}|{p}', p, xy[i], o.aucell_cell_type_short.astype(str).values[i], X[i])
-    S = ad.read_h5ad('/share/fsmresfiles/UC/revision_jenny/UC_shared_inputs/uc_cosmx_colocal_input.h5ad', backed='r')
+    S = ad.read_h5ad('/share/fsmresfiles/UC/revision_jenny/_shared_inputs/UC_shared_inputs/uc_cosmx_colocal_input.h5ad', backed='r')
     g, X = two(S); o = g.obs
     keep = o.cohort.astype(str).str.contains('Serial').values & (o.condition.astype(str) == 'UC').values
     for b in o[keep].block.astype(str).unique():
@@ -62,7 +62,7 @@ if _run('F3F_tnc_near_mmp1_test'):
 if _run('F3F_tnc_mmp1_map'):
     import matplotlib.cm as cm, matplotlib.colors as mcolors
     from matplotlib.patches import Rectangle, Patch
-    O = '/share/fsmresfiles/UC/revision_jenny/Fig2F_tnc_mmp1_spatial'
+    O = '/share/fsmresfiles/UC/revision_jenny/Fig3F_tnc_mmp1_spatial'
     PX, MAX_UM, PAD_UM, BAR_UM = 0.12028, 50, 60, 500
     S_BG, S_ZERO, S_EXPR, A_EXPR = 4, 4, 26, 1.0     # point sizes (background, non-expressing target, expressing) and alpha
     SLIDES = ['i0261_i0331_slide4', 'i0261_i0331_slide1']; BOX = '#2E8B57'   # patient I0261, patient I0331 (one patient per slide)
@@ -117,7 +117,7 @@ if _run('F3F_tnc_mmp1_map'):
     fig.text(0.47, 0.84, f'TNC⁺ odds near (≤ {MAX_UM} µm)\nvs far from MMP1⁺ Mac:\nOR {ST.OR:.1f} (95% CI {ST.CI_lo:.2f}–{ST.CI_hi:.2f})\nP = {pfmt(ST.P)}', ha='center', va='top', fontsize=12)
     lax.legend(handles=[Patch(facecolor='none', edgecolor=BOX, lw=2.2, label=f'TNC⁺ OGN⁺RSPO3⁺ Fib\nwith an MMP1⁺\nSELENOP⁺MMP9⁺SPP1⁺ Mac\nwithin {MAX_UM} µm')],
                loc='upper left', frameon=False, fontsize=11.5, handlelength=1.4)
-    fig.savefig(f'{O}/fig2_tnc_mmp1_combined.png', bbox_inches='tight', pad_inches=0.5)
+    fig.savefig(f'{O}/Fig3F_tnc_mmp1_combined.png', bbox_inches='tight', pad_inches=0.5)
     pd.DataFrame(allrows).round(3).to_csv(f'{O}/tnc_mmp1_boxed_pairs.csv', index=False)
 
 
@@ -126,10 +126,10 @@ if _run('S6E_tnc_regulator_correlations'):
     import warnings; warnings.filterwarnings('ignore')
     import scanpy as sc
     from scipy import stats
-    O='/share/fsmresfiles/UC/revision_jenny/SuppFig6E_tnc_regulators'; PX=0.12028
+    O='/share/fsmresfiles/UC/revision_jenny/SuppFig6G_tnc_regulators'; PX=0.12028
     def lognorm(a):
         a=a.copy(); sc.pp.normalize_total(a); sc.pp.log1p(a); return a
-    S=sc.read_h5ad('/share/fsmresfiles/UC/revision_jenny/UC_shared_inputs/uc_cosmx_colocal_input.h5ad')
+    S=sc.read_h5ad('/share/fsmresfiles/UC/revision_jenny/_shared_inputs/UC_shared_inputs/uc_cosmx_colocal_input.h5ad')
     S=lognorm(S[(S.obs['cohort'].astype(str).str.contains('Serial'))&(S.obs['condition'].astype(str)=='UC')].copy())
     S.obs['ct']=S.obs['cell_type_short'].astype(str); S.obs['piece']=S.obs['block'].astype(str); S.obsm['xy']=S.obs[['x_um','y_um']].values; S.obs['cohort2']='Serial 6K'
     W=sc.read_h5ad('/share/fsmresfiles/UC/AtoMx/UC_1k_6k_wholetrans/whole_trans/Processed_merged/v7/h5ad_obj/qc_wtx_v7_merged_anno.h5ad')
@@ -185,7 +185,7 @@ if _run('S6E_tnc_regulator_correlations'):
 # Section S6E_tnc_regulator_plot: TNC vs its upstream regulators (Supp 6E)
 if _run('S6E_tnc_regulator_plot'):
     from matplotlib.patches import Patch
-    O='/share/fsmresfiles/UC/revision_jenny/SuppFig6E_tnc_regulators'
+    O='/share/fsmresfiles/UC/revision_jenny/SuppFig6G_tnc_regulators'
     T=pd.read_csv(f'{O}/pathway_spatial_mmp1_tnc.csv'); BG=pd.read_csv(f'{O}/pathway_spatial_tnc_background.csv')
     col=lambda p: '#D62828' if p<0.05 else '#F77F00' if p<0.1 else '#FCBF49'
     plt.rcParams.update({'font.size':11,'figure.dpi':300,'axes.spines.top':False,'axes.spines.right':False})

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """CD CosMx 6K resections: CXCL12-High Regions, antigen-presenting cells (APCs) and the Treg Suppression Score.
 
-Panels: Fig 5E (section 43563_A4 maps), Fig 5F (one tissue piece of 43563_A8), Supp 9E (CXCL12 by cell type),
-        Supp 9F (score by local APC quintile in CXCL12-Low vs CXCL12-High Regions).
+Panels: Fig 5E (section 43563_A4 maps), Supp 9E (one tissue piece of 43563_A8), Supp 9D (CXCL12 by cell type),
+        Fig 5F (score by local APC quintile in CXCL12-Low vs CXCL12-High Regions). Panel letters as of 2026-11-16; section ids keep the old letters.
 Inputs: resection combined/ tables and per-section norm_log1p.h5ad; ligand_receptor_state/ and cellular_neighborhoods_v2/ (11, 12).
-Outputs: A_fig4_panels/fig4_cxcl12_region_tregs_exp.csv; Fig 5E-F and Supp 9E-F PNGs (Supp 9E also its CSV);
+Outputs: A_fig4_panels/fig4_cxcl12_region_tregs_exp.csv; Fig 5E-F and Supp 9D-E PNGs (Supp 9D also its CSV);
          archive/supp_apc_abundance_by_neighbourhood.csv (APC share per CN, read by 17).
 Run: python 16_cxcl12_regions.py, or RUN_SECTIONS=<id>[,<id>...] for single sections (file order).
 """
@@ -137,7 +137,7 @@ if _run('F5EF_section_maps'):
     from matplotlib.colors import ListedColormap, LinearSegmentedColormap
     from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
     from scipy.ndimage import distance_transform_edt
-    OUTD = f'{RJ}/Fig4A-F_treg_suppression_niches'
+    OUTD = f'{RJ}/Fig5A-F_treg_suppression_niches'
     BIN, SIG = 10, 5.0                                                   # 10 um grid, sigma 50 um for the cell-composition fields
     NW_SIG, CX_PCT = 200, 70                                             # CXCL12-High Region = upper 30% of the smoothed CXCL12 field
     MIN_AREA = 2 * np.pi * NW_SIG ** 2 / BIN ** 2                        # outline patches smaller than 2 pi sigma^2 are dropped
@@ -282,7 +282,7 @@ if _run('F5EF_section_maps'):
     vkey(KX[0], KY, [Line2D([], [], color='0.6', lw=1.8, label='CXCL12-High\nRegion (white\noutline)')])
     vkey(KX[1], KY, [Line2D([], [], ls='', marker='o', ms=4.5, mfc=C_APCDOT, mec='none', label='APC'), Line2D([], [], color='#333333', lw=LW_REG, label='CXCL12-High\nRegion')])
     vkey(KX[2], KY, [Line2D([], [], color='#333333', lw=LW_REG, label='CXCL12-High\nRegion')])
-    fig.savefig(f'{OUTD}/fig4_A4_four_panel_plain.png', dpi=300, bbox_inches='tight', pad_inches=0.06); plt.close(fig)
+    fig.savefig(f'{OUTD}/Fig5E_43563_A4_four_maps.png', dpi=300, bbox_inches='tight', pad_inches=0.06); plt.close(fig)
 
     # ---------------- Fig 5F: the large lower-left display unit of 43563_A8 alone: CNs | Treg Suppression Score ----------------
     SEC = '43563_A8'; d = prep(SEC); cf, Tf = d['cells'], d['T']; uu = cf.piece.values.astype(int)
@@ -312,7 +312,7 @@ if _run('F5EF_section_maps'):
     fig.legend(handles=[Line2D([], [], ls='', marker='o', ms=8, mfc=PAL[k], mec='none', label=NAMES[k]) for k in range(1, 11)], ncol=2, loc='upper left',
                bbox_to_anchor=(0, -0.20 / Hp), frameon=False, fontsize=11.5, handletextpad=0.2, labelspacing=0.32, columnspacing=1.6, borderaxespad=0, borderpad=0)
     vbar(K2, 1 - 0.75 / Hp, 0.40, imS, SCORE_LABEL, 'both')
-    fig.savefig(f'{OUTD}/fig4_A8_cn_treg_two_panel_piece.png', dpi=300, bbox_inches='tight', pad_inches=0.06); plt.close(fig)
+    fig.savefig(f'{RJ}/SuppFig10A-E_niche_cxcl12_apc/SuppFig10E_43563_A8_cn_treg_maps.png', dpi=300, bbox_inches='tight', pad_inches=0.06); plt.close(fig)
     print('Fig 5F: display unit', PU, '|', len(cc_), 'cells,', len(tp_), 'Tregs', flush=True)
 
 
@@ -383,7 +383,7 @@ if _run('S9F_apc_cxcl12_quintiles'):
     axr.set_xlabel('CXCL12\nRegion', fontsize=14.5)
     axr.set_ylabel('Rise in Treg Suppression Score,\nLowest → Highest Quintile (SD)', fontsize=13.5, labelpad=2)
     axr.set_title('Rise', fontsize=16)
-    fig.savefig(f'{RJ}/SuppFig9A-F_niche_cxcl12_apc/fig4_apc_quintile_cxcl12_bars_with_rise.png', dpi=300, bbox_inches='tight', pad_inches=0.06); plt.close(fig)
+    fig.savefig(f'{RJ}/Fig5A-F_treg_suppression_niches/Fig5F_cxcl12_apc_quintile_bars.png', dpi=300, bbox_inches='tight', pad_inches=0.06); plt.close(fig)
 
 
 # ======================================================================================================================
@@ -391,7 +391,7 @@ if _run('S9F_apc_cxcl12_quintiles'):
 # ======================================================================================================================
 if _run('S9E_cxcl12_by_celltype'):
     from statsmodels.tools.sm_exceptions import ConvergenceWarning; warnings.simplefilter('ignore', ConvergenceWarning)
-    STEM1 = f'{RJ}/SuppFig9A-F_niche_cxcl12_apc/supp_cxcl12_expression_by_cell_type'; STEM2 = f'{P4}/archive/supp_apc_abundance_by_neighbourhood'
+    STEM1 = f'{RJ}/SuppFig10A-E_niche_cxcl12_apc/supp_cxcl12_expression_by_cell_type'; STEM2 = f'{P4}/archive/supp_apc_abundance_by_neighbourhood'
     EXCL = ['SELENOP+ Fib']                                      # not shown, not tested (SELENOP+ Mac is shown)
     OGN = 'OGN+RSPO3+ Fib'; HI = '#b2182b'; HIL = '#e7a3a3'; GR = '#7f7f7f'; GRL = '#c4c4c4'
     DISP = {'OGN+RSPO3+ Fib': 'OGN⁺RSPO3⁺ Fib', 'ADAMDEC1+ Fib': 'ADAMDEC1⁺ Fib', 'PLA2G2A+ ECM Fib': 'PLA2G2A⁺ ECM Fib', 'CD9+ M2 Mac': 'CD9⁺ M2 Mac',
@@ -520,7 +520,7 @@ if _run('S9E_cxcl12_by_celltype'):
     for t_, yb in ((TXA, 0.135), (TXB, 0.045)):
         ax.text(all_m + 2.5, yb, t_, transform=ax.get_xaxis_transform(), ha='left', va='bottom', fontsize=13.5, color=HI, zorder=6, linespacing=1.3,
                 bbox=dict(boxstyle='round,pad=0.45', facecolor='white', edgecolor=HI, lw=1))
-    fig.savefig(f'{STEM1}.png', dpi=300, bbox_inches='tight', pad_inches=0.05); plt.close(fig)
+    fig.savefig(f'{RJ}/SuppFig10A-E_niche_cxcl12_apc/SuppFig10D_cxcl12_expression_by_cell_type.png', dpi=300, bbox_inches='tight', pad_inches=0.05); plt.close(fig)   # CSV keeps the STEM1 name
     # ---- APC share of all cells per CN; mixed model APC % ~ C(CN, ref CN10) + (1 | section), BH over 9 contrasts
     CC = C[C.CN.notna()].copy(); CC['CN'] = CC.CN.astype(int)
     apc_ct = CC.ct.where(CC.ct.isin(APC5))

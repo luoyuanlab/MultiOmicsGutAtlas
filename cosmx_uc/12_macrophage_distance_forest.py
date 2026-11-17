@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """UC CosMx 6K: forest plot and supplementary table of the macrophage distance models (Fig 3H).
 
-Input:   Fig2H_cosmx_fib_mac_distance/intermediate/glmm_final.csv (11) and ligand_sender_cells.csv.gz (07)
+Input:   Fig3H_cosmx_fib_mac_distance/intermediate/glmm_final.csv (11) and ligand_sender_cells.csv.gz (07)
 Outputs: fig_distance_forest.png (Fig 3H), supp_table_distance_models_cosmx.csv (all outcomes and models)
 Run:     python <file>, or RUN_SECTIONS=<id>[,<id>] python <file>
 """
@@ -22,7 +22,7 @@ if _run('F3H_distance_forest'):
     import pandas as pd, matplotlib
     matplotlib.use('Agg'); import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
-    O='/share/fsmresfiles/UC/revision_jenny/Fig2H_cosmx_fib_mac_distance'
+    O='/share/fsmresfiles/UC/revision_jenny/Fig3H_cosmx_fib_mac_distance'
     C=pd.read_csv(f'{O}/intermediate/ligand_sender_cells.csv.gz'); G=pd.read_csv(f'{O}/intermediate/glmm_final.csv')
     GROUPS=[('SPP1 and MMP9','ogn',['SPP1','MMP9'],'#C1436D'),('IL33 Receptors','IL33',['IL1RL1','IL1RAP'],'#1C7C74'),
             ('CXCL12 Receptors','CXCL12',['CXCR4','ACKR3'],'#4F5FA0'),('FGF7 Receptors','FGF7',['FGFR1','FGFR2','NRP1'],'#D4952A')]   # IGF1 not plotted; reported in the CSV

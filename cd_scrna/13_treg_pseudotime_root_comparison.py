@@ -3,7 +3,7 @@
 
 Inputs   CD atlas h5ad (09_atlas_h5ad_conversion.ipynb); T-cell sub-clusters tcell_iter3.RDS and tcell_iter3_umap.csv
          (05_t_cell_subclustering.R); treg_pseudotime.h5ad (12_treg_pseudotime.py)
-Outputs  SuppFig8A-I_treg_pseudotime_robustness/: panels and CSVs
+Outputs  SuppFig9A-H_treg_pseudotime_robustness/: panels and CSVs
 Sections S8AB_th17like_tregs -> S8CD_leiden_root -> S8E_palantir_main_root -> S8E_root_comparison
          -> S8E_root_comparison_plot   (RUN_SECTIONS=<id>,<id> runs a subset)
 """
@@ -19,7 +19,7 @@ def _run(section):
 
 
 D = '/share/fsmresfiles/UC/revision_jenny/cd_treg_rebuild_rowfix'
-OUT = '/share/fsmresfiles/UC/revision_jenny/SuppFig8A-I_treg_pseudotime_robustness'
+OUT = '/share/fsmresfiles/UC/revision_jenny/SuppFig9A-H_treg_pseudotime_robustness'
 
 
 def w3(df, name):
@@ -332,7 +332,7 @@ if _run('S8CD_leiden_root'):
     sc.pl.umap(t, color='leiden_0.6', s=18, legend_loc='on data', legend_fontsize=11, legend_fontoutline=2,
                frameon=False, ax=ax, show=False)
     ax.set_title('Leiden Sub-Clusters', loc='center')
-    save(fig, 'ext8A_leiden_umap.png')
+    save(fig, 'SuppFig9C_leiden_umap.png')
     w3(base.assign(leiden_0_6=o['leiden_0.6'].values), 'ext8A_leiden_umap.csv')
 
     fig, ax = plt.subplots(figsize=(5.4, 4.4))
@@ -340,7 +340,7 @@ if _run('S8CD_leiden_root'):
     ax.set_title('Pseudotime Bins', loc='center')
     ax.legend(title='Pseudotime Bin', loc='center left', bbox_to_anchor=(1.0, 0.5), frameon=False, fontsize=10,
               title_fontsize=10, markerscale=1.2)
-    save(fig, 'ext8A_pseudotime_bins_umap.png')
+    save(fig, 'SuppFig9C_pseudotime_bins_umap.png')
     w3(base.assign(pt_bin=o['pt_bin'].astype(str).values, dpt_pseudotime=o['dpt_pseudotime'].values),
        'ext8A_pseudotime_bins_umap.csv')
     ct = pd.crosstab(o['leiden_0.6'], o['pt_bin'])
@@ -385,7 +385,7 @@ if _run('S8CD_leiden_root'):
                        Patch(color='#d9d9d9', label='Excluded (<20 Cells)')], loc='upper center', bbox_to_anchor=(0.5, -0.17),
               ncol=3, frameon=False, fontsize=8, handlelength=1)
     sns.despine(ax=ax)
-    save(fig, 'ext8C_root_selection_treg_core.png')
+    save(fig, 'SuppFig9D_root_selection_treg_core.png')
 
 
 # ---- Section S8E_palantir_main_root: Palantir from the main DPT root cell on the Harmony PCA (5 and 10 diffusion
@@ -463,4 +463,4 @@ if _run('S8E_root_comparison_plot'):
     a2.axhline(1, c='grey', lw=0.8, ls='--'); a2.set_xticks([0, 1]); a2.set_xticklabels(['Diffusion\nPseudotime', 'Palantir\n(10 components)'], fontsize=12)
     a2.set_xlim(-0.6, 1.75); a2.set_ylim(0.4, 1.03); a2.set_ylabel('Spearman ρ vs Main Pseudotime', fontsize=12)
     a2.set_title('Alternative Roots Within Clus 4', fontsize=15, loc='center'); a2.spines[['top', 'right']].set_visible(False)
-    plt.tight_layout(); fig.savefig(f'{OUT}/ext8DE_root_robustness_within_clus{ROOT}.png', dpi=300, bbox_inches='tight')
+    plt.tight_layout(); fig.savefig(f'{OUT}/SuppFig9E_root_robustness_within_clus{ROOT}.png', dpi=300, bbox_inches='tight')

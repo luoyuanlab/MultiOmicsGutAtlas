@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """CD CosMx 6K resections: antigen-presenting cells (APCs) and MHC-II per cellular neighbourhood (CN).
 
-Panels: Supp 9C (APC % of cells, adjusted per-APC MHC-II score and inside-minus-outside Treg Suppression Score per CN).
+Panels: Supp 9B (APC % of cells, adjusted per-APC MHC-II score and inside-minus-outside Treg Suppression Score per CN).
 Inputs: resection combined/ tables and per-section norm_log1p.h5ad; cellular_neighborhoods_v2/cn_per_cell.parquet (11);
         lr_modules_cellchat/treg_receiver_module_scores_per_treg.csv.gz (13); A_fig4_panels/fig4_cn_treg_state_forest.csv (12);
         archive/supp_apc_abundance_by_neighbourhood.csv (16, section S9E_cxcl12_by_celltype).
 Outputs: archive/ext_cn10_antigen_presentation_abundance.csv, A_fig4_panels/supp_cn10_apc_abundance_mhcii.csv,
-         SuppFig9A-F_niche_cxcl12_apc/supp_cn10_apc_one_panel.{png,csv}.
+         SuppFig10A-E_niche_cxcl12_apc/SuppFig10B_cn10_apc_mhcii.png and supp_cn10_apc_one_panel.csv.
 Run: python 17_neighbourhood_apc_mhcii.py, or RUN_SECTIONS=<id>[,<id>...] (file order). APC_CACHE=<path.pkl> stores / re-uses the per-APC table.
 """
 import os, gc, warnings
@@ -327,7 +327,7 @@ if _run('cn_apc_mhcii_table'):
 # ======================================================================================================================
 if _run('S9C_cn_apc_mhcii'):
     SRC = f'{OUTA}/supp_cn10_apc_abundance_mhcii.csv'; SRCF = f'{OUTA}/fig4_cn_treg_state_forest.csv'
-    STEM = f'{RJ}/SuppFig9A-F_niche_cxcl12_apc/supp_cn10_apc_one_panel'
+    STEM = f'{RJ}/SuppFig10A-E_niche_cxcl12_apc/supp_cn10_apc_one_panel'
     CNS = CN78
     VLIM = 0.4; CMAP = plt.get_cmap('RdBu_r'); NORM = matplotlib.colors.Normalize(-VLIM, VLIM)
     GREY, GREYT, GREYS = '#8c8c8c', '#666666', '#9a9a9a'
@@ -375,7 +375,7 @@ if _run('S9C_cn_apc_mhcii'):
     cb.ax.set_xticklabels(['−0.4', '−0.2', '0', '0.2', '0.4'])
     cb.ax.set_title('Treg Suppression Score (z)', fontsize=12.5, pad=4, color='#252525')
     fig.subplots_adjust(left=0.115, right=0.985, top=0.935, bottom=0.11)
-    fig.savefig(f'{STEM}.png', dpi=300, bbox_inches='tight', pad_inches=0.05); plt.close(fig)
+    fig.savefig(f'{RJ}/SuppFig10A-E_niche_cxcl12_apc/SuppFig10B_cn10_apc_mhcii.png', dpi=300, bbox_inches='tight', pad_inches=0.05); plt.close(fig)   # CSV keeps the STEM name
     OUT = T.reset_index().rename(columns={'index': 'CN'}).assign(all_cells_apc_pct=ALL_PCT,
            metric='x = APCs as % of all cells in the CN (mean over sections, 95% CI t; q_apc = mixed model vs CN10, BH over 9); y = per-APC MHC-II score, '
               'model-adjusted mean (mixed model; 95% CI; q_mhc2 = q vs CN10, BH over 7); fill = treg_score: Treg Suppression Score, Tregs in minus outside the CN '
